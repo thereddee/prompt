@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Lotus de Fer - Prompt Editor</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 180px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 200px; }
         .container { max-width: 1000px; margin: auto; }
         
         h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
@@ -16,16 +16,16 @@
         
         .section { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 15px; }
         
-        .item { background: #2d2d2d; padding: 15px; border-radius: 6px; cursor: pointer; border: 1px solid #444; transition: 0.2s; position: relative; }
+        .item { background: #2d2d2d; padding: 15px; border-radius: 6px; cursor: pointer; border: 1px solid #444; transition: 0.2s; position: relative; display: flex; flex-direction: column; }
         .item:hover { border-color: #00d4ff; background: #363636; }
         .item input { position: absolute; right: 15px; top: 15px; scale: 1.5; cursor: pointer; }
         
         .trigger-label { color: #ffcc00; font-weight: bold; display: block; margin-bottom: 6px; font-family: monospace; font-size: 1.1em; }
-        .preview-text { color: #aaa; font-size: 0.85em; line-height: 1.3; display: block; padding-right: 25px; }
+        .preview-text { color: #aaa; font-size: 0.85em; line-height: 1.3; display: block; padding-right: 25px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         #output-container { position: fixed; bottom: 0; left: 0; right: 0; background: #222; padding: 20px; border-top: 3px solid #00d4ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.7); z-index: 100; }
         .output-wrapper { max-width: 1000px; margin: auto; }
-        textarea { width: 100%; height: 70px; background: #111; color: #00ffcc; border: 1px solid #444; padding: 12px; font-family: monospace; resize: none; border-radius: 4px; box-sizing: border-box; }
+        textarea { width: 100%; height: 100px; background: #111; color: #00ffcc; border: 1px solid #444; padding: 12px; font-family: monospace; resize: none; border-radius: 4px; box-sizing: border-box; line-height: 1.4; }
         
         .controls { display: flex; gap: 10px; margin-top: 10px; }
         .btn { flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
@@ -78,16 +78,12 @@
         const root = document.getElementById('dynamic-content');
         root.innerHTML = '';
 
-        // On sépare le fichier par lignes pour détecter les headers ###
         const lines = content.split('\n');
-        let currentSection = null;
         let currentWrapper = null;
 
-        // Regex pour capturer triggers et replaces
         const matchRegex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
         lines.forEach((line, index) => {
-            // Détection des catégories via commentaires ###
             if (line.trim().startsWith('###')) {
                 const categoryName = line.replace('###', '').trim();
                 const h2 = document.createElement('h2');
@@ -100,21 +96,18 @@
                 return;
             }
 
-            // Si on n'a pas encore de section, on en crée une par défaut
             if (!currentWrapper) {
                 currentWrapper = document.createElement('div');
                 currentWrapper.className = 'section';
                 root.appendChild(currentWrapper);
             }
 
-            // Test si la ligne commence un bloc trigger (on regarde aussi la ligne suivante pour le replace)
-            const segment = lines.slice(index, index + 5).join('\n');
+            const segment = lines.slice(index, index + 10).join('\n');
             const match = segment.match(matchRegex);
 
             if (match && line.trim().startsWith('- trigger:')) {
                 const trigger = match[1];
                 let replace = (match[2] || match[3] || "").trim();
-                replace = replace.replace(/\s+/g, ' ');
 
                 if ([':espanso', ':txt', ':date', ':shell'].includes(trigger)) return;
 
@@ -129,7 +122,7 @@
                 };
                 div.innerHTML = `
                     <span class="trigger-label">${trigger}</span>
-                    <span class="preview-text">${replace}</span>
+                    <span class="preview-text">${replace.substring(0, 100)}...</span>
                     <input type="checkbox" value="${replace}" onchange="updatePrompt()">
                 `;
                 currentWrapper.appendChild(div);
@@ -139,7 +132,8 @@
 
     function updatePrompt() {
         const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const prompt = Array.from(checkboxes).map(cb => cb.value).join(' ');
+        // On utilise \n\n (deux sauts de ligne) pour séparer les éléments
+        const prompt = Array.from(checkboxes).map(cb => cb.value).join('\n\n');
         document.getElementById('promptOutput').value = prompt;
     }
 
