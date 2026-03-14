@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Lotus de Fer - Sync GitHub</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: #2d2d2d; padding: 20px; border-radius: 8px; border: 1px solid #444; }
+        h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; }
+        .status { font-size: 0.4em; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; }
+        .status.online { background: #2ecc71; color: #fff; }
+        .status.error { background: #e74c3c; color: #fff; }
+        .section { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 20px; }
+        .item { background: #3d3d3d; padding: 12px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .item:hover { border-color: #00d4ff; background: #454545; }
+        .item input { margin-right: 10px; }
+        .trigger-label { color: #00d4ff; font-weight: bold; display: block; margin-bottom: 4px; }
+        #output-container { position: sticky; bottom: 20px; background: #222; padding: 20px; border-radius: 8px; border: 2px solid #00d4ff; margin-top: 30px; box-shadow: 0 -10px 20px rgba(0,0,0,0.5); }
+        textarea { width: 100%; height: 80px; background: #111; color: #00ffcc; border: 1px solid #444; padding: 10px; font-family: monospace; resize: none; }
+        .btn-copy { background: #00d4ff; color: #000; padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; border-radius: 4px; }
+        .btn-copy:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>
+        Lotus de Fer 
+        <span id="loadStatus" class="status">Chargement...</span>
+    </h1>
+    
+    <div id="dynamic-sections">
+        </div>
+
+    <div id="output-container">
+        <textarea id="promptOutput" readonly placeholder="Coche des éléments pour construire ton prompt..."></textarea>
+        <button class="btn-copy" onclick="copyPrompt()">Copier le prompt</button>
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const YAML_FILE_URL = 'default.yml'; // Le nom de ton fichier dans ton repo GitHub
+    // ---------------------
+
+    async function loadYamlFromServer() {
+        const statusEl = document.getElementById('loadStatus');
+        try {
+            const response = await fetch(YAML_FILE_URL);
+            if (!response.ok) throw new Error('Fichier non trouvé');
+            
+            const content = await response.text();
+            parseYaml(content);
+            
+            statusEl.textContent = "Connecté";
+            statusEl.className = "status online";
+        } catch (err) {
+            console.error(err);
+            statusEl.textContent = "Erreur de sync";
+            statusEl.className = "status error";
+            alert("Impossible de charger " + YAML_FILE_URL + ". Assure-toi que le fichier est bien sur ton GitHub.");
+        }
+    }
+
+    function parseYaml(content) {
+        const sectionsDiv = document.getElementById('dynamic-sections');
+        sectionsDiv.innerHTML = ''; 
+
+        // Regex pour extraire triggers et replaces (gère les blocs simples et multi-lignes |)
+        const regex = /- trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/g;
+        
+        let match;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'section';
+
+        while ((match = regex.exec(content)) !== null) {
+            const trigger = match[1];
+            let replace = (match[2] || match[3] || "").trim();
+
+            // Nettoyage des indentations si c'est un bloc multi-ligne
+            replace = replace.replace(/^[\s\t]+/gm, ' ').replace(/\s+/g, ' '); 
+
+            // Filtres (on ignore les utilitaires)
+            if ([':espanso', ':txt', ':date', ':shell', ':fichesession'].includes(trigger)) continue;
+
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `
+                <label style="cursor:pointer; display:block;">
+                    <input type="checkbox" value="${replace}" onchange="updatePrompt()">
+                    <span class="trigger-label">${trigger}</span>
+                    <small style="color:#aaa; font-size:0.8em;">${replace.substring(0, 60)}...</small>
+                </label>
+            `;
+            wrapper.appendChild(div);
+        }
+        
+        sectionsDiv.appendChild(wrapper);
+    }
+
+    function updatePrompt() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        const prompt = Array.from(checkboxes).map(cb => cb.value).join(' ');
+        document.getElementById('promptOutput').value = prompt;
+    }
+
+    function copyPrompt() {
+        const text = document.getElementById('promptOutput');
+        if (!text.value) return;
+        text.select();
+        document.execCommand('copy');
+        
+        const btn = document.querySelector('.btn-copy');
+        const originalText = btn.textContent;
+        btn.textContent = "Copié !";
+        setTimeout(() => btn.textContent = originalText, 2000);
+    }
+
+    // Lancement automatique au chargement de la page
+    window.onload = loadYamlFromServer;
+</script>
+
+</body>
+</html>

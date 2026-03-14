@@ -1,0 +1,178 @@
+# espanso match file
+# For a complete introduction, visit the official docs at: https://espanso.org/docs/
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+
+matches:
+  # --- Simple text replacement ---
+  - trigger: ":espanso"
+    replace: "Hi there!"
+
+  - trigger: ":txt"
+    replace: "REPLY TO ME IN TEXT, DO NOT GENERATE AN IMAGE"
+
+  # --- Dates & Shell ---
+  - trigger: ":date"
+    replace: "{{mydate}}"
+    vars:
+      - name: mydate
+        type: date
+        params:
+          format: "%m/%d/%Y"
+
+  - trigger: ":shell"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: "echo 'Hello from your shell'"
+
+  # --- Styles de génération d'images ---
+  - trigger: ":watercolor"
+    replace: "Artistic Style: Watercolor and ink illustration. Fine black fineliner outlines. Textured colors with wash effects."
+
+  - trigger: ":rpgstyle"
+    replace: "High-fantasy digital illustration with a modern watercolor and ink aesthetic. The style features clean, thin ink outlines combined with soft, textured digital washes. Use warm, ambient lighting with subtle rim lighting. Proportions and facial features follow a modern anime/manga influence, large expressive eyes, detailed hair. Subtle paper grain texture overlay, tabletop RPG sourcebook feel."
+
+  - trigger: ":bookstyle"
+    replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. Clean, thin ink outlines, soft textured digital watercolor washes. The composition dissolves into a Digital Watercolor Wash at the borders, creating a vignette effect. Applied textures include subtle Paint splatters and a Cold-press paper grain. Lighting is atmospheric and warm."
+
+  - trigger: ":sketchbook"
+    replace: "Sketchbook style with vignetted edges, light paint splatters, and a background that fades into the white of the paper (negative space)."
+
+  - trigger: ":rpgcomic"
+    replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
+
+  # --- Personnages ---
+  - trigger: ":doggus"
+    replace: "A very tall, lanky yet toned man with deep ebony skin. Narrow facial structure, high cheekbones, sharp jawline. Half-lidded eyes with a serene, confident gaze and a charismatic smirk. Meticulously groomed Van Dyke facial hair. Long, thin black dreadlocks flowing dynamically. Slender-fit build, relaxed and rhythmic posture."
+
+  - trigger: ":danne"
+    replace: "A mature human warrior in late 50s, 6'7 tall, broad-shouldered with a commanding presence. Shoulder-length brown hair, short grizzled beard. Wearing dark brown studded leather brigandine armor and a tattered crimson travel cloak fastened by a circular gold brooch."
+
+  - trigger: ":orlando"
+    replace: "A small-statured 4ft halfling with a compact, wiry build. Sharp, refined features with intense focus and professional coldness. Polar white/silvery hair, short sides, slicked back top. Wearing cinched black stealth leather armor, reinforced doublet with diagonal straps, utility pouches, silent travel boots."
+
+  - trigger: ":dio"
+    replace: "A 3'4 halfling with a robust build and theatrical rockstar presence. Thick, dark brown curly hair mane. Small pointed beard, expressive and intense features. Wearing a long rich brown leather duster coat, billowing white linen shirt, and sturdy dark leather boots."
+
+  - trigger: ":dimmu"
+    replace: "A colossal 7'8 muscular goliath with blue-grey skin. Bald, square impassive face, solid white pupil-less eyes. Glowing luminescent cyan magical runes on chest and arms. Wearing a thick brown leather harness that is held in the front by a thick ring, heavy bracers, and a wide belt with an ornate buckle."
+
+  - trigger: ":kae-tavern"
+    replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid with a red ribbon. Amber-gold eyes, knowing smirk. Tavern attire: cream linen chemise with billowing sleeves, mid-bust brown leather corset, white apron, charcoal leather trousers, and thigh-high red boots with gold embroidery."
+
+  - trigger: ":kae-combat"
+    replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid. Amber-gold eyes. Combat gear: flowing crimson cape with gold dragon brooch, fitted leather trousers, bronze scale hip armor (faulds), and thigh-high red boots. Wielding a short sword made of translucent glowing blue crystal."
+
+  # --- Système Kae (Modular) ---
+  - trigger: ":kbody"
+    replace: "Full body shot from head to toe. A beautiful 18-year-old young woman with an elegant, toned-fit hourglass figure, slender and agile posture."
+
+  - trigger: ":kface"
+    replace: "Delicate heart-shaped face with high cheekbones and fine youthful features. Radiant almond-shaped amber eyes, slightly hooded. Thick, flowing platinum-silver hair with a deep side part and cascading messy waves. She has a confident expression with a subtle, knowing smirk."
+
+  - trigger: ":koutfit"
+    replace: "Wearing a structured dark crimson leather jerkin over a long-sleeved olive-green undertunic. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Smooth, seamless brown leather arm bracers. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak with a cowl-like hood is draped over her shoulders. A longsword in a simple brown leather scabbard hangs from her left hip."
+
+  - trigger: ":kpose"
+    replace: "Pose: Standing straight and confident, facing the camera directly forward. Arms relaxed by her sides, conveying a quiet and intense presence."
+
+  - trigger: ":kmarvel"
+    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
+
+  - trigger: ":kaefull"
+    replace: "{{kbody}} {{kface}} {{koutfit}} {{kpose}} {{kmarvel}}"
+
+  # --- Kae Expressions ---
+  - trigger: ":kexp-happy"
+    replace: "Expression: Happy, wide warm smile, eyes bright and joyful."
+  - trigger: ":kexp-neutral"
+    replace: "Expression: Neutral, calm and unreadable intensity, relaxed facial muscles."
+  - trigger: ":kexp-angry"
+    replace: "Expression: Angry, furrowed brows, sharp glaring amber eyes, tight lips."
+  - trigger: ":kexp-smirk"
+    replace: "Expression: Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
+  - trigger: ":kexp-defiant"
+    replace: "Expression: Defiant, chin slightly raised, determined and stubborn glare, tight jaw."
+  - trigger: ":kexp-sad"
+    replace: "Expression: Sad, downturned eyes, slight vulnerable frown, soft sorrowful gaze."
+  - trigger: ":kexp-blush"
+    replace: "Expression: Blushing, noticeable rosy red cheeks, flustered but gentle shy smile."
+  - trigger: ":kexp-closed"
+    replace: "Expression: Serene, both eyes gently closed, peaceful and calm face."
+  - trigger: ":kexp-wink"
+    replace: "Expression: Playful wink, one eye closed, cheeky and charming smile."
+
+  # --- Kae Hood & Crystal ---
+  - trigger: ":khood-off"
+    replace: "Her tattered crimson travel cloak hood is pushed DOWN, revealing her thick, flowing platinum-silver hair with a deep side part and cascading messy waves."
+  - trigger: ":khood-on"
+    replace: "Wearing a crimson cowl-like hood pulled UP over her head, casting soft shadows on her forehead. A few loose strands of her platinum-silver hair peek out to frame her face."
+  - trigger: ":karm-crystal"
+    replace: "Both of her arms are completely transformed into solid, glowing, translucent blue crystal. The crystalline surface is faceted like a cut gemstone, catching the light and emitting a faint, pulsing magical cyan inner glow. No human skin on her arms, just pure magical blue crystal from the shoulders down."
+  - trigger: ":koutfit-crystal"
+    replace: "Wearing a structured dark crimson leather jerkin over a sleeveless olive-green undertunic, leaving her glowing crystal arms fully exposed. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak is draped over her shoulders. A translucent blue crystal short sword hangs from her left hip."
+
+  # --- Template D&D Session ---
+  - trigger: ":fichesession"
+    replace: |
+      ---
+      category: Session
+      tags:
+        - Dragon-Heist
+        - Waterdeep
+        - $|$
+      session_date: {{sessiondate}}
+      location:
+        - "[[Lieu 1]]"
+        - "[[Lieu 2]]"
+      status: Terminé
+      dg-publish: true
+      ---
+
+      # 📜 Session [NUMÉRO] : [TITRE ÉPIQUE]
+
+      > [!abstract] **Résumé rapide**
+      > [Résumé rigoureux de 2-3 phrases de l'intrigue principale.]
+
+      ---
+
+      ## 📖 Détails des événements
+
+      ### 📍 [[NOM DU LIEU 1]]
+      * **Action :** [Détails rigoureux des discussions, transactions ou décisions]
+      * **Révélation/PNJ :** Mention de [[PNJ]] et découvertes.
+
+      ---
+
+      ## 🎲 Challenges (Hors Combat)
+      | Personnage | Compétence | DC | Résultat |
+      | :--- | :--- | :--- | :--- |
+      | **[[Nom]]** | [Skill] | [DC] | [Score] ([Succès/Échec]) - [Conséquence précise]. |
+
+      ---
+
+      ## ⚔️ Combat : [NOM DE LA RENCONTRE]
+      ### 🔥 Faits Saillants
+      * **MVP :** [[Nom du PJ]] (Justification tactique).
+
+      ### 📝 Log Complet de Combat
+      | Acteur | Action | Jet | Dégâts/Effet |
+      | :--- | :--- | :--- | :--- |
+      | **[[Nom]]** | [Action/Spell] | [Jet] | [Résultat ou Dégâts] |
+
+      ---
+
+      ## 💰 Trésor & XP
+      > [!money] **Butin**
+      > - **Or :** [Montant]
+      > - **Items :** [Objets magiques]
+
+      **🎯 Prochaine étape :** [Cliffhanger].
+    vars:
+      - name: sessiondate
+        type: date
+        params:
+          format: "%Y-%m-%d"
