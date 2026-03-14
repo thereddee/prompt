@@ -44,7 +44,10 @@ matches:
   - trigger: ":rpgcomic"
     replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
-  # --- Personnages ---
+  - trigger: ":kmarvel"
+    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
+
+  # --- Personnages (Hors système Kae) ---
   - trigger: ":doggus"
     replace: "A very tall, lanky yet toned man with deep ebony skin. Narrow facial structure, high cheekbones, sharp jawline. Half-lidded eyes with a serene, confident gaze and a charismatic smirk. Meticulously groomed Van Dyke facial hair. Long, thin black dreadlocks flowing dynamically. Slender-fit build, relaxed and rhythmic posture."
 
@@ -66,54 +69,71 @@ matches:
   - trigger: ":kae-combat"
     replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid. Amber-gold eyes. Combat gear: flowing crimson cape with gold dragon brooch, fitted leather trousers, bronze scale hip armor (faulds), and thigh-high red boots. Wielding a short sword made of translucent glowing blue crystal."
 
-  # --- Système Kae (Modular) ---
+  # ------------------------------------------------
+  # SYSTÈME KAE (MODULAR) - BASE & CORPS
+  # ------------------------------------------------
   - trigger: ":kbody"
-    replace: "Full body shot from head to toe. A beautiful 18-year-old young woman with an elegant, toned-fit hourglass figure, slender and agile posture."
+    replace: "[Use ks.a.jpg as the primary character reference for the body] Full body shot from head to toe. A beautiful 18-year-old young woman with an elegant, toned-fit hourglass figure, slender and agile posture."
 
   - trigger: ":kface"
-    replace: "Delicate heart-shaped face with high cheekbones and fine youthful features. Radiant almond-shaped amber eyes, slightly hooded. Thick, flowing platinum-silver hair with a deep side part and cascading messy waves. She has a confident expression with a subtle, knowing smirk."
-
-  - trigger: ":koutfit"
-    replace: "Wearing a structured dark crimson leather jerkin over a long-sleeved olive-green undertunic. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Smooth, seamless brown leather arm bracers. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak with a cowl-like hood is draped over her shoulders. A longsword in a simple brown leather scabbard hangs from her left hip."
+    replace: "[Use ka.jpg for facial structure and features] Delicate heart-shaped face with high cheekbones and fine youthful features. Radiant almond-shaped amber eyes, slightly hooded. Thick, flowing platinum-silver hair with a deep side part and cascading messy waves."
 
   - trigger: ":kpose"
     replace: "Pose: Standing straight and confident, facing the camera directly forward. Arms relaxed by her sides, conveying a quiet and intense presence."
 
-  - trigger: ":kmarvel"
-    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
-
   - trigger: ":kaefull"
     replace: "{{kbody}} {{kface}} {{koutfit}} {{kpose}} {{kmarvel}}"
 
-  # --- Kae Expressions ---
-  - trigger: ":kexp-happy"
-    replace: "Expression: Happy, wide warm smile, eyes bright and joyful."
-  - trigger: ":kexp-neutral"
-    replace: "Expression: Neutral, calm and unreadable intensity, relaxed facial muscles."
-  - trigger: ":kexp-angry"
-    replace: "Expression: Angry, furrowed brows, sharp glaring amber eyes, tight lips."
-  - trigger: ":kexp-smirk"
-    replace: "Expression: Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
-  - trigger: ":kexp-defiant"
-    replace: "Expression: Defiant, chin slightly raised, determined and stubborn glare, tight jaw."
-  - trigger: ":kexp-sad"
-    replace: "Expression: Sad, downturned eyes, slight vulnerable frown, soft sorrowful gaze."
-  - trigger: ":kexp-blush"
-    replace: "Expression: Blushing, noticeable rosy red cheeks, flustered but gentle shy smile."
-  - trigger: ":kexp-closed"
-    replace: "Expression: Serene, both eyes gently closed, peaceful and calm face."
-  - trigger: ":kexp-wink"
-    replace: "Expression: Playful wink, one eye closed, cheeky and charming smile."
+  # ------------------------------------------------
+  # SYSTÈME KAE - ÉQUIPEMENT & BRAS
+  # ------------------------------------------------
+  - trigger: ":koutfit"
+    replace: "[Use ks.a.jpg for outfit reference] Wearing a structured dark crimson leather jerkin over a long-sleeved olive-green undertunic. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Smooth, seamless brown leather arm bracers. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak is draped over her shoulders. A longsword in a simple brown leather scabbard hangs from her left hip."
 
-  # --- Kae Hood & Crystal ---
-  - trigger: ":khood-off"
-    replace: "Her tattered crimson travel cloak hood is pushed DOWN, revealing her thick, flowing platinum-silver hair with a deep side part and cascading messy waves."
-  - trigger: ":khood-on"
-    replace: "Wearing a crimson cowl-like hood pulled UP over her head, casting soft shadows on her forehead. A few loose strands of her platinum-silver hair peek out to frame her face."
   - trigger: ":karm-crystal"
-    replace: "Both of her arms are completely transformed into solid, glowing, translucent blue crystal. The crystalline surface is faceted like a cut gemstone, catching the light and emitting a faint, pulsing magical cyan inner glow. No human skin on her arms, just pure magical blue crystal from the shoulders down."
+    replace: "[Use ks.c.jpg for the crystal arms reference] Both of her arms are completely transformed into solid, glowing, translucent blue crystal. The crystalline surface is faceted like a cut gemstone, emitting a faint, pulsing magical cyan inner glow. No human skin on her arms, just pure magical blue crystal from the shoulders down."
+
   - trigger: ":koutfit-crystal"
-    replace: "Wearing a structured dark crimson leather jerkin over a sleeveless olive-green undertunic, leaving her glowing crystal arms fully exposed. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak is draped over her shoulders. A translucent blue crystal short sword hangs from her left hip."
+    replace: "[Use ks.c.jpg for outfit reference] Wearing a structured dark crimson leather jerkin over a sleeveless olive-green undertunic, leaving her glowing crystal arms fully exposed. A single, minimalist brown leather belt with a flat circular silver buckle. Close-fitting dark olive-green trousers tucked perfectly into knee-high brown riding boots. A tattered crimson travel cloak. A translucent blue crystal short sword hangs from her left hip."
+
+  # ------------------------------------------------
+  # SYSTÈME KAE - CAPUCHON (HOOD)
+  # ------------------------------------------------
+  - trigger: ":khood-off"
+    replace: "[Use ks.a.jpg for hair reference] Her tattered crimson travel cloak hood is pushed DOWN, fully revealing her hair."
+
+  - trigger: ":khood-on"
+    replace: "[Use ks.b.jpg for hood reference] Wearing a crimson cowl-like hood pulled UP over her head, casting soft shadows on her forehead. A few loose strands of her platinum-silver hair peek out to frame her face."
+
+  # ------------------------------------------------
+  # SYSTÈME KAE - EXPRESSIONS (S'appuie sur ke.a.jpg ou ke.b.jpg)
+  # ------------------------------------------------
+  - trigger: ":kexp-happy"
+    replace: "[Expression reference: Happy] Wide warm smile, eyes bright and joyful."
+
+  - trigger: ":kexp-neutral"
+    replace: "[Expression reference: Neutral] Calm and unreadable intensity, relaxed facial muscles."
+
+  - trigger: ":kexp-angry"
+    replace: "[Expression reference: Angry] Furrowed brows, sharp glaring amber eyes, tight lips."
+
+  - trigger: ":kexp-smirk"
+    replace: "[Expression reference: Smirking] Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
+
+  - trigger: ":kexp-defiant"
+    replace: "[Expression reference: Defiant] Chin slightly raised, determined and stubborn glare, tight jaw."
+
+  - trigger: ":kexp-sad"
+    replace: "[Expression reference: Sad] Downturned eyes, slight vulnerable frown, soft sorrowful gaze."
+
+  - trigger: ":kexp-blush"
+    replace: "[Expression reference: Blushing] Noticeable rosy red cheeks, flustered but gentle shy smile."
+
+  - trigger: ":kexp-closed"
+    replace: "[Expression reference: Serene] Both eyes gently closed, peaceful and calm face."
+
+  - trigger: ":kexp-wink"
+    replace: "[Expression reference: Winking] Playful wink, one eye closed, cheeky and charming smile."
 
   # --- Template D&D Session ---
   - trigger: ":fichesession"
