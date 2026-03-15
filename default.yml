@@ -117,6 +117,75 @@ matches:
   - trigger: ":kae-combat"
     replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid. Amber-gold eyes. Combat gear: flowing crimson cape with gold dragon brooch, fitted leather trousers, bronze scale hip armor (faulds), and thigh-high red boots. Wielding a short sword made of translucent glowing blue crystal."
 
+### ANGLES DE CAMÉRA & CADRAGE
+  
+  # --- Cadrage (Framing) ---
+  - trigger: ":cam-ecu"
+    replace: "Camera Shot: Extreme Close-Up (ECU) shot, focusing intensely on a single small detail, highly detailed and intimate."
+
+  - trigger: ":cam-cu"
+    replace: "Camera Shot: Close-Up (CU) shot, framing the character's face from the shoulders up, strongly highlighting facial expressions and raw emotion."
+
+  - trigger: ":cam-mcu"
+    replace: "Camera Shot: Medium Close-Up (MCU) shot, framed from the chest up, perfect for dialogue and subtle upper-body language."
+
+  - trigger: ":cam-ms"
+    replace: "Camera Shot: Medium Shot (MS), framed from the waist up, showing the character's body language and interaction with the immediate environment."
+
+  - trigger: ":cam-cowboy"
+    replace: "Camera Shot: Cowboy Shot / American Shot, framed from the mid-thigh up, perfect for showing holstered weapons, utility belts, or a dynamic action stance."
+
+  - trigger: ":cam-full"
+    replace: "Camera Shot: Full-Body Shot, capturing the entire character from head to toe, showing their complete outfit and their scale within the environment."
+
+  - trigger: ":cam-wide"
+    replace: "Camera Shot: Establishing Wide Shot / Extreme Long Shot (ELS), capturing the vast setting and emphasizing the epic scale of the environment."
+
+  - trigger: ":cam-two"
+    replace: "Camera Shot: Two-Shot framing, showing two characters side-by-side or interacting within the same frame."
+
+  # --- Angles (Angles) ---
+  - trigger: ":ang-eye"
+    replace: "Camera Angle: Eye-Level camera angle, a neutral, natural, and highly relatable perspective."
+
+  - trigger: ":ang-low"
+    replace: "Camera Angle: Low-Angle shot, looking up at the character from below to make them appear powerful, heroic, imposing, and dominant."
+
+  - trigger: ":ang-high"
+    replace: "Camera Angle: High-Angle shot, looking down on the character from above, making them appear vulnerable, isolated, or overwhelmed."
+
+  - trigger: ":ang-bird"
+    replace: "Camera Angle: Bird's Eye View / Top-Down shot, looking directly overhead, establishing the spatial layout or conveying a frantic, chaotic mood."
+
+  - trigger: ":ang-worm"
+    replace: "Camera Angle: Worm's Eye View, an extreme ground-level shot looking straight up, creating a highly dramatic, intense, and towering perspective."
+
+  - trigger: ":ang-dutch"
+    replace: "Camera Angle: Dutch Angle / Dutch Tilt, a slanted and diagonal camera angle creating a sense of psychological tension, disorientation, or cinematic chaos."
+
+  # --- Techniques Spécialisées & BD ---
+  - trigger: ":fx-pov"
+    replace: "Composition: Point of View (POV) shot, showing the scene directly through the character's own eyes."
+
+  - trigger: ":fx-ots"
+    replace: "Composition: Over-the-Shoulder (OTS) shot, positioned behind one character looking past their shoulder to focus on the subject they are speaking to."
+
+  - trigger: ":fx-foreshortening"
+    replace: "Composition: Extreme foreshortening perspective, dynamic comic book action style, exaggerating the size of limbs or weapons extending directly toward the camera."
+
+  - trigger: ":fx-fisheye"
+    replace: "Lens Effect: Fisheye lens, heavily distorted and curved perspective, creating an intense, claustrophobic, or highly dynamic action feel."
+
+  - trigger: ":fx-macro"
+    replace: "Lens Effect: Macro photography shot, extremely close-up focusing on microscopic textures and depth of field."
+
+  - trigger: ":fx-iso"
+    replace: "Composition: Isometric angle / Orthographic projection, tabletop RPG style, an elevated 3D diagonal perspective showing the environment and characters with clear depth."
+
+  - trigger: ":fx-glamour"
+    replace: "Composition: Glamour Portrait style, a close, artistic, and stylized shot specifically designed to highlight the character’s aesthetic beauty and intense presence."
+
+
   ### NOTES DE SESSION D&D
   - trigger: ":fichesession"
     replace: |
