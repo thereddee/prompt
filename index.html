@@ -12,7 +12,6 @@
         .status.online { background: #2ecc71; color: #fff; }
         .status.error { background: #e74c3c; color: #fff; }
 
-        /* Nouvelle section de configuration du fichier */
         .config-bar { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; display: flex; align-items: center; gap: 10px; }
         .config-bar input { background: #111; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 4px; flex-grow: 1; font-family: monospace; }
         .btn-load { background: #ffcc00; color: #000; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -36,6 +35,13 @@
         .btn { flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
         .btn-copy { background: #00d4ff; color: #000; }
         .btn-clear { background: #444; color: #fff; }
+        .btn:active { transform: scale(0.98); }
+        
+        /* Style pour la boîte d'erreur */
+        .error-box { background: #331414; border: 2px dashed #ff4d4d; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .error-box h2 { color: #ff4d4d; margin-top: 0; border: none; padding: 0; }
+        .error-box h3 { color: #ffcc00; margin-top: 20px; }
+        .error-box ul, .error-box ol { line-height: 1.6; font-size: 1.1em; }
     </style>
 </head>
 <body>
@@ -73,7 +79,6 @@
         statusEl.className = "status";
 
         try {
-            // Ajout d'un timestamp pour éviter le cache GitHub
             const response = await fetch(`${fileName}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error();
             const content = await response.text();
@@ -83,7 +88,27 @@
         } catch (err) {
             statusEl.textContent = "Erreur : " + fileName;
             statusEl.className = "status error";
-            document.getElementById('dynamic-content').innerHTML = `<p style="color:red; text-align:center; margin-top:20px;">Impossible de trouver le fichier <strong>${fileName}</strong> dans ton repo GitHub.</p>`;
+            
+            // Le panneau d'instructions clair qui te dit quoi faire
+            document.getElementById('dynamic-content').innerHTML = `
+                <div class="error-box">
+                    <h2>⚠️ Oups ! Fichier introuvable</h2>
+                    <p style="font-size: 1.1em;">Le script a cherché partout, mais il ne trouve pas le fichier <strong>${fileName}</strong>.</p>
+                    
+                    <h3>Fichiers requis sur ton GitHub :</h3>
+                    <ul>
+                        <li>Ton éditeur web : <code>index.html</code></li>
+                        <li>Tes données Espanso : <code>${fileName}</code></li>
+                    </ul>
+                    
+                    <h3>Check-list rapide :</h3>
+                    <ol>
+                        <li>Assure-toi que <strong>${fileName}</strong> est bien uploadé à la racine de ton repo.</li>
+                        <li>Vérifie les majuscules et minuscules (ex: <em>Default.yml</em> va planter si tu cherches <em>default.yml</em>).</li>
+                        <li>Si tu viens juste de l'uploader, attends 1 ou 2 minutes pour que la cache de GitHub Pages se mette à jour, puis rafraîchis la page.</li>
+                    </ol>
+                </div>
+            `;
         }
     }
 
@@ -170,7 +195,6 @@
         updatePrompt();
     }
 
-    // Chargement initial
     window.onload = () => loadYaml('default.yml');
 </script>
 
