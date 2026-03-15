@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <title>Lotus de Fer - Prompt Editor</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 200px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 220px; }
         .container { max-width: 1000px; margin: auto; }
         
-        h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .status { font-size: 0.4em; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; }
         .status.online { background: #2ecc71; color: #fff; }
         .status.error { background: #e74c3c; color: #fff; }
+
+        /* Nouvelle section de configuration du fichier */
+        .config-bar { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; display: flex; align-items: center; gap: 10px; }
+        .config-bar input { background: #111; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 4px; flex-grow: 1; font-family: monospace; }
+        .btn-load { background: #ffcc00; color: #000; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         h2 { color: #00d4ff; border-left: 4px solid #00d4ff; padding-left: 15px; margin-top: 40px; text-transform: uppercase; font-size: 1.1em; }
         
@@ -31,7 +36,6 @@
         .btn { flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
         .btn-copy { background: #00d4ff; color: #000; }
         .btn-clear { background: #444; color: #fff; }
-        .btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -41,6 +45,12 @@
         Lotus de Fer 
         <span id="loadStatus" class="status">Sync...</span>
     </h1>
+
+    <div class="config-bar">
+        <span>Fichier YAML :</span>
+        <input type="text" id="fileNameInput" value="default.yml" placeholder="nom-du-fichier.yml">
+        <button class="btn-load" onclick="manualLoad()">Charger</button>
+    </div>
     
     <div id="dynamic-content">
         </div>
@@ -57,20 +67,31 @@
 </div>
 
 <script>
-    const YAML_FILE_URL = 'default.yml';
-
-    async function loadYaml() {
+    async function loadYaml(fileName) {
         const statusEl = document.getElementById('loadStatus');
+        statusEl.textContent = "Sync...";
+        statusEl.className = "status";
+
         try {
-            const response = await fetch(YAML_FILE_URL);
+            // Ajout d'un timestamp pour éviter le cache GitHub
+            const response = await fetch(`${fileName}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error();
             const content = await response.text();
             renderContent(content);
-            statusEl.textContent = "Connecté";
+            statusEl.textContent = "Connecté : " + fileName;
             statusEl.className = "status online";
         } catch (err) {
-            statusEl.textContent = "Erreur Fichier";
+            statusEl.textContent = "Erreur : " + fileName;
             statusEl.className = "status error";
+            document.getElementById('dynamic-content').innerHTML = `<p style="color:red; text-align:center; margin-top:20px;">Impossible de trouver le fichier <strong>${fileName}</strong> dans ton repo GitHub.</p>`;
+        }
+    }
+
+    function manualLoad() {
+        const fileName = document.getElementById('fileNameInput').value.trim();
+        if (fileName) {
+            clearAll();
+            loadYaml(fileName);
         }
     }
 
@@ -80,7 +101,6 @@
 
         const lines = content.split('\n');
         let currentWrapper = null;
-
         const matchRegex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
         lines.forEach((line, index) => {
@@ -108,7 +128,6 @@
             if (match && line.trim().startsWith('- trigger:')) {
                 const trigger = match[1];
                 let replace = (match[2] || match[3] || "").trim();
-
                 if ([':espanso', ':txt', ':date', ':shell'].includes(trigger)) return;
 
                 const div = document.createElement('div');
@@ -122,7 +141,7 @@
                 };
                 div.innerHTML = `
                     <span class="trigger-label">${trigger}</span>
-                    <span class="preview-text">${replace.substring(0, 100)}...</span>
+                    <span class="preview-text">${replace}</span>
                     <input type="checkbox" value="${replace}" onchange="updatePrompt()">
                 `;
                 currentWrapper.appendChild(div);
@@ -132,7 +151,6 @@
 
     function updatePrompt() {
         const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        // On utilise \n\n (deux sauts de ligne) pour séparer les éléments
         const prompt = Array.from(checkboxes).map(cb => cb.value).join('\n\n');
         document.getElementById('promptOutput').value = prompt;
     }
@@ -152,7 +170,8 @@
         updatePrompt();
     }
 
-    window.onload = loadYaml;
+    // Chargement initial
+    window.onload = () => loadYaml('default.yml');
 </script>
 
 </body>
