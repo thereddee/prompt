@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Lotus de Fer - Prompt Editor</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 220px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 250px; }
         .container { max-width: 1000px; margin: auto; }
         
         h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -29,6 +29,10 @@
 
         #output-container { position: fixed; bottom: 0; left: 0; right: 0; background: #222; padding: 20px; border-top: 3px solid #00d4ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.7); z-index: 100; }
         .output-wrapper { max-width: 1000px; margin: auto; }
+        
+        /* Style pour la zone des fichiers requis */
+        #requiredFilesList { display: none; background: #332b00; color: #ffcc00; padding: 10px 15px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #ffcc00; font-size: 0.95em; }
+        
         textarea { width: 100%; height: 100px; background: #111; color: #00ffcc; border: 1px solid #444; padding: 12px; font-family: monospace; resize: none; border-radius: 4px; box-sizing: border-box; line-height: 1.4; }
         
         .controls { display: flex; gap: 10px; margin-top: 10px; }
@@ -37,11 +41,9 @@
         .btn-clear { background: #444; color: #fff; }
         .btn:active { transform: scale(0.98); }
         
-        /* Style pour la boîte d'erreur */
         .error-box { background: #331414; border: 2px dashed #ff4d4d; padding: 20px; border-radius: 8px; margin-top: 20px; }
         .error-box h2 { color: #ff4d4d; margin-top: 0; border: none; padding: 0; }
         .error-box h3 { color: #ffcc00; margin-top: 20px; }
-        .error-box ul, .error-box ol { line-height: 1.6; font-size: 1.1em; }
     </style>
 </head>
 <body>
@@ -64,6 +66,8 @@
 
 <div id="output-container">
     <div class="output-wrapper">
+        <div id="requiredFilesList"></div>
+        
         <textarea id="promptOutput" readonly placeholder="Coche des éléments pour bâtir ton prompt..."></textarea>
         <div class="controls">
             <button class="btn btn-clear" onclick="clearAll()">Effacer</button>
@@ -88,25 +92,10 @@
         } catch (err) {
             statusEl.textContent = "Erreur : " + fileName;
             statusEl.className = "status error";
-            
-            // Le panneau d'instructions clair qui te dit quoi faire
             document.getElementById('dynamic-content').innerHTML = `
                 <div class="error-box">
                     <h2>⚠️ Oups ! Fichier introuvable</h2>
-                    <p style="font-size: 1.1em;">Le script a cherché partout, mais il ne trouve pas le fichier <strong>${fileName}</strong>.</p>
-                    
-                    <h3>Fichiers requis sur ton GitHub :</h3>
-                    <ul>
-                        <li>Ton éditeur web : <code>index.html</code></li>
-                        <li>Tes données Espanso : <code>${fileName}</code></li>
-                    </ul>
-                    
-                    <h3>Check-list rapide :</h3>
-                    <ol>
-                        <li>Assure-toi que <strong>${fileName}</strong> est bien uploadé à la racine de ton repo.</li>
-                        <li>Vérifie les majuscules et minuscules (ex: <em>Default.yml</em> va planter si tu cherches <em>default.yml</em>).</li>
-                        <li>Si tu viens juste de l'uploader, attends 1 ou 2 minutes pour que la cache de GitHub Pages se mette à jour, puis rafraîchis la page.</li>
-                    </ol>
+                    <p>Le script ne trouve pas le fichier <strong>${fileName}</strong>.</p>
                 </div>
             `;
         }
@@ -176,8 +165,40 @@
 
     function updatePrompt() {
         const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const prompt = Array.from(checkboxes).map(cb => cb.value).join('\n\n');
-        document.getElementById('promptOutput').value = prompt;
+        let promptParts = [];
+        let requiredFiles = new Set();
+        
+        // Regex pour trouver les noms de fichiers (.png, .jpg, .jpeg)
+        const fileRegex = /[a-zA-Z0-9_-]+\.(png|jpg|jpeg)/gi;
+        // Regex pour enlever les instructions entre crochets ex: [Use ks.a.jpg for...]
+        const instructionRegex = /\[Use.*?\]\s*/gi;
+
+        checkboxes.forEach(cb => {
+            let text = cb.value;
+            
+            // 1. Chercher s'il y a des fichiers requis dans le texte
+            let filesFound = text.match(fileRegex);
+            if (filesFound) {
+                filesFound.forEach(file => requiredFiles.add(file));
+            }
+            
+            // 2. Nettoyer le texte pour le prompt final (enlève le "[Use xyz.jpg...]")
+            let cleanText = text.replace(instructionRegex, '').trim();
+            promptParts.push(cleanText);
+        });
+
+        // Mise à jour de la zone de texte du prompt
+        document.getElementById('promptOutput').value = promptParts.join('\n\n');
+
+        // Mise à jour de la bannière des fichiers requis
+        const filesContainer = document.getElementById('requiredFilesList');
+        if (requiredFiles.size > 0) {
+            filesContainer.innerHTML = "📸 <strong>Fichiers à uploader :</strong> " + Array.from(requiredFiles).join(', ');
+            filesContainer.style.display = "block";
+        } else {
+            filesContainer.style.display = "none";
+            filesContainer.innerHTML = "";
+        }
     }
 
     function copyPrompt() {
