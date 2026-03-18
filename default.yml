@@ -49,7 +49,7 @@ matches:
     replace: "Pose: Standing straight and confident, facing the camera directly forward. Arms relaxed by her sides, conveying a quiet and intense presence."
 
   - trigger: ":kaefull"
-    replace: "{{kbody}} {{kface}} {{koutfit}} {{kpose}} {{kmarvel}}"
+    replace: "{{kbody}} {{kface}} {{koutfit}} {{kpose}} {{kmarvel}} {{arme}} "
 
   ### KAE - ÉQUIPEMENT & CRISTAL
   - trigger: ":koutfit"

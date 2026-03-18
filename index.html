@@ -32,14 +32,22 @@
         /* --- ÉDITEURS DE PROMPT --- */
         .section-title { color: var(--accent); margin: 0 0 10px 0; font-size: 1.1em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Conteneur magique pour le highlight du résumé */
         .editor-container { position: relative; width: 100%; height: 120px; background: #111; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-        .highlight-layer, #promptResume { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 12px; font-family: monospace; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
-        .highlight-layer { color: transparent; z-index: 1; pointer-events: none; }
-        #promptResume { background: transparent; color: var(--text); border: none; z-index: 2; resize: none; outline: none; caret-color: white; }
-        .tag-highlight { border-radius: 3px; padding: 0 2px; font-weight: bold; }
-
-        #promptComplet { width: 100%; height: 150px; background: #0a0a0a; color: #aaa; border: 1px solid var(--border); padding: 12px; font-family: monospace; border-radius: 4px; resize: none; line-height: 1.4; }
+        
+        /* Synchronisation absolue entre le fond et le texte */
+        .highlight-layer, #promptResume { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            padding: 12px; margin: 0;
+            font-family: 'Consolas', 'Courier New', monospace; /* Force une police fixe */
+            font-size: 14px; line-height: 1.5; letter-spacing: normal;
+            white-space: pre-wrap; word-wrap: break-word; word-break: break-all;
+            border: none; box-sizing: border-box;
+        }
+        
+        .highlight-layer { color: transparent; z-index: 1; pointer-events: none; overflow-y: hidden; }
+        #promptResume { background: transparent; color: var(--text); z-index: 2; resize: none; outline: none; caret-color: white; overflow-y: auto; }
+        
+        #promptComplet { width: 100%; height: 150px; background: #0a0a0a; color: #aaa; border: 1px solid var(--border); padding: 12px; font-family: 'Consolas', 'Courier New', monospace; border-radius: 4px; resize: none; line-height: 1.5; box-sizing: border-box; }
 
         /* --- VARIABLES --- */
         #variablesContainer { display: flex; flex-direction: column; gap: 10px; background: #2a2510; border: 1px solid #665200; padding: 15px; border-radius: 4px; display: none; }
@@ -228,25 +236,28 @@
         processPrompt();
     }
 
-    function processPrompt() {
+function processPrompt() {
         const textarea = document.getElementById('promptResume');
         const highlightLayer = document.getElementById('highlightLayer');
         const rawText = textarea.value;
 
-        // 1. Mise à jour de la surbrillance visuelle (Highlighting)
-        // On remplace le texte pour le layer arrière. Les tags reconnus deviennent colorés.
+        // 1. Mise à jour de la surbrillance visuelle
         let highlightedHTML = rawText
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') // Échapper le HTML
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') 
             .replace(/(:\w[\w-]*)/g, (match) => {
                 if (promptDb[match]) {
-                    // Appliquer la couleur de la catégorie
-                    return `<span class="tag-highlight" style="background-color: ${promptDb[match].color}40; color: ${promptDb[match].color};">${match}</span>`;
+                    // On met SEULEMENT le background, le texte reste transparent pour éviter le flou
+                    return `<span style="background-color: ${promptDb[match].color}50; border-radius: 2px;">${match}</span>`;
                 }
                 return match;
             });
         
-        // Pour que les retours à la ligne soient bien calqués
-        highlightLayer.innerHTML = highlightedHTML.replace(/\n/g, '<br>') + '<br>';
+        // Gérer le dernier retour à la ligne pour le calque visuel
+        if (rawText[rawText.length - 1] === '\n') {
+            highlightedHTML += ' ';
+        }
+        
+        highlightLayer.innerHTML = highlightedHTML;
 
         // 2. Traduction pour le "Prompt Complet"
         let fullPrompt = rawText;
@@ -254,7 +265,6 @@
         
         foundTags.forEach(tag => {
             if (promptDb[tag]) {
-                // Nettoyage des balises [Use ...] s'il y en a
                 let cleanReplace = promptDb[tag].text.replace(/\[Use.*?\]\s*/gi, '').trim();
                 fullPrompt = fullPrompt.replace(tag, cleanReplace);
             }
@@ -263,7 +273,6 @@
         // 3. Gestion des variables {{...}}
         extractAndRenderVariables(fullPrompt);
         
-        // Applique les valeurs actuelles des variables au texte final
         let finalOutput = fullPrompt;
         Object.keys(currentVariables).forEach(varName => {
             const val = currentVariables[varName] || `[${varName}]`;
