@@ -110,87 +110,64 @@
     <div class="sidebar-header">Bibliothèque</div>
 
     <details id="refGallery" open>
-        <summary style="border-left: 4px solid #ffcc00;">🖼️ RÉFÉRENCE ACTIVE</summary>
+        <summary style="border-left: 4px solid #ffcc00;">🖼️ RÉFÉRENCE VISUELLE</summary>
         <div class="details-content">
             <div id="selectedRefDisplay" style="margin-bottom:15px; text-align:center; display:none; background: rgba(0,212,255,0.05); border: 1px dashed var(--accent); padding: 10px; border-radius: 8px;">
-                <p style="font-size:10px; color:var(--accent); margin-top:0; font-weight:bold;">Prêt pour la génération :</p>
-                <img id="refPreview" src="" style="width:100px; height:100px; object-fit:cover; border:2px solid var(--accent); border-radius:4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                <p id="refName" style="font-size:9px; color:#888; margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
-                <button onclick="window.clearActiveReference()" style="display:block; margin:5px auto; font-size:10px; background:#333; border:none; color:#ff4d4d; cursor:pointer; padding:4px 8px; border-radius:4px; font-weight:bold;">[ Retirer l'image ]</button>
+                <p style="font-size:10px; color:var(--accent); margin-top:0; font-weight:bold;">Référence chargée :</p>
+                <img id="refPreview" src="" style="width:100px; height:100px; object-fit:cover; border:2px solid var(--accent); border-radius:4px;">
+                <p id="refName" style="font-size:9px; color:#888; margin: 5px 0; overflow:hidden;"></p>
+                <button onclick="window.clearActiveReference()" style="background:#333; color:#ff4d4d; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">[ Retirer ]</button>
             </div>
 
             <input type="file" id="localRefInput" style="display:none;" accept="image/*" onchange="window.handleLocalRef(this)">
-            <button class="trigger-btn" onclick="document.getElementById('localRefInput').click()" style="border: 1px solid #444; margin-bottom: 10px;">
-                <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
-                    <span style="font-size:18px;">📤</span>
-                    <div style="text-align:left;">
-                        <strong>Upload local</strong>
-                        <small>Image de ton PC</small>
-                    </div>
-                </div>
+            <button class="trigger-btn" onclick="document.getElementById('localRefInput').click()" style="border: 1px solid #444; margin-bottom:10px;">
+                <strong>📤 Upload local</strong>
+                <small>Image de ton PC</small>
             </button>
-            
-            <p style="font-size:10px; color:#555; text-align:center; font-style:italic;">Ou clique sur un tag avec icône ci-dessous</p>
         </div>
     </details>
 
-    <hr style="border: 0; border-top: 1px solid #222; margin: 0;">
+    <hr style="border:0; border-top:1px solid #222; margin:0;">
 
     <div class="sidebar-content" id="sidebarContent">
-        <p style="text-align:center; padding:20px; color:#666;">Chargement de default.yml...</p>
+        <p style="text-align:center; padding:20px; color:#666;">Chargement...</p>
     </div>
 
-    <div style="padding: 10px; border-top: 1px solid #222; margin-top: auto;">
-        <button class="btn-generate" style="font-size: 10px; opacity: 0.5; width: 100%; position: static;" onclick="window.debugListModels()">
-            🐞 Lister Modèles (v1beta)
+    <div style="padding:10px; border-top:1px solid #222; margin-top:auto;">
+        <button class="btn-generate" style="font-size:10px; opacity:0.5; width:100%; position:static;" onclick="window.debugListModels()">
+            🐞 Lister Modèles (Debug)
         </button>
     </div>
 </div>
 
 <script type="module">
-    // --- VARIABLES GLOBALES ---
     let promptDb = {};
     let currentVariables = {};
     let lastRenderedVars = "";
-    // NOUVEAU : Référence visuelle Base64 courante
-    let currentReferenceBase64 = null; 
+    let currentReferenceBase64 = null; // Stocke l'image de référence
 
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- LOGIQUE YAML (Ligne par Ligne - Fix Catégories) ---
+    // --- PARSING YAML (Stable) ---
     async function loadYaml(fileName = 'default.yml') {
         const root = document.getElementById('sidebarContent');
-        if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Sync... 🔄</p>';
         try {
-            // Cache-buster pour forcer le refresh de GitHub Pages
             const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!res.ok) throw new Error(`Fichier YAML introuvable (${res.status})`);
             const text = await res.text();
             parseYamlLineByLine(text);
         } catch (e) {
-            if (root) root.innerHTML = `<p style="color:red;padding:10px;">❌ Erreur YAML :<br><span style="font-size:10px;color:#aaa;">${e.message}</span></p>`;
+            root.innerHTML = `<p style="color:red;">Erreur YAML</p>`;
         }
     }
 
-    // Le parseur "dumb but stable" qui détecte ### et image:
     function parseYamlLineByLine(content) {
         const root = document.getElementById('sidebarContent');
         root.innerHTML = '';
         const lines = content.split('\n');
-        
         let currentDetails = null, contentDiv = null, catIdx = 0;
-        
-        // Regex pour capturer image: "assets/xxx.png" OU image:assets/xxx.png
-        const regexImage = /image:\s*["']?([\s\S]*?)["']?(?=\n|$)/;
-        // Regex pour trigger/replace simplifié
-        const regexTriggerReplace = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
-
-        promptDb = {}; // Clear database
 
         lines.forEach((line, i) => {
             const trimmed = line.trim();
-            
-            // 1. Détection de catégorie (###) -> Fix REGRESSION 2
             if (trimmed.startsWith('###')) {
                 currentDetails = document.createElement('details');
                 const summary = document.createElement('summary');
@@ -204,161 +181,67 @@
                 return;
             }
 
-            // 2. Détection d'un item trigger
-            const segment = lines.slice(i, i + 8).join('\n'); // On prend un bloc pour les regex
-            const matchTR = segment.match(regexTriggerReplace);
+            const segment = lines.slice(i, i+8).join('\n');
+            const matchTR = segment.match(/^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n|$)|\|([\s\S]*?)(?=\n|$))/);
             
             if (matchTR && trimmed.startsWith('- trigger:')) {
                 const trig = matchTR[1];
-                const repl = (matchTR[2] || matchTR[3] || "").trim().replace(/\s+/g, ' ');
-                const matchImg = segment.match(regexImage);
-                const imgPath = matchImg ? matchImg[1] : null;
+                const repl = (matchTR[2] || matchTR[3] || "").trim();
+                const imgMatch = segment.match(/image:\s*["']?([\s\S]*?)["']?(?=\n|$)/);
+                const imgPath = imgMatch ? imgMatch[1] : null;
 
-                if (trig && repl) {
-                    promptDb[trig] = { text: repl, color: colorPalette[(catIdx-1)%6] || '#888', image: imgPath };
-                    
-                    const btn = document.createElement('button');
-                    btn.className = 'trigger-btn';
-                    
-                    // Contenu HTML du bouton (Thumbnail si présent)
-                    let inner = '';
-                    if (imgPath) {
-                        inner = `
-                            <div style="display:flex; align-items:center;">
-                                <img src="${imgPath}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px; border:1px solid #333;">
-                                <div style="flex:1;">
-                                    <strong style="color:${promptDb[trig].color}">${trig}</strong>
-                                    <small>${repl}</small>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        inner = `
-                            <strong style="color:${promptDb[trig].color}">${trig}</strong>
-                            <small>${repl}</small>
-                        `;
-                    }
-                    
-                    btn.innerHTML = inner;
-                    
-                    // Click handler (Texte + Image Reference) -> Fix REGRESSION 3
-                    btn.onclick = () => {
-                        window.insertTag(trig);
-                        if (imgPath) {
-                            fetch(imgPath).then(r => r.blob()).then(blob => {
-                                convertBlobToBase64(blob, `YAML: ${imgPath}`);
-                            });
-                        }
-                    };
-                    
-                    if (contentDiv) contentDiv.appendChild(btn);
-                }
+                promptDb[trig] = { text: repl, color: colorPalette[(catIdx-1)%6], image: imgPath };
+                
+                const btn = document.createElement('button');
+                btn.className = 'trigger-btn';
+                btn.innerHTML = imgPath ? 
+                    `<div style="display:flex;align-items:center;"><img src="${imgPath}" style="width:35px;height:35px;object-fit:cover;margin-right:8px;border-radius:4px;"><div><strong>${trig}</strong><small>${repl.substring(0,30)}...</small></div></div>` :
+                    `<strong>${trig}</strong><small>${repl}</small>`;
+                
+                btn.onclick = () => {
+                    window.insertTag(trig);
+                    if (imgPath) window.loadReferenceFromUrl(imgPath);
+                };
+                if (contentDiv) contentDiv.appendChild(btn);
             }
         });
     }
 
-    // --- GESTION DES RÉFÉRENCES VISUELLES & FEEDBACK (Fix REGRESSION 3) ---
-    // NOUVEAU : Fonction utilitaire de feedback visuel
-    function setReferenceUI(base64Data, mimeType, nameDisplay) {
-        currentReferenceBase64 = base64Data;
-        const mime = mimeType || "image/png";
-        
-        const feedbackArea = document.getElementById('resultArea');
-        // Feedback temporaire rapide pour confirmer le chargement
-        feedbackArea.innerHTML = `<div style="color:orange;padding:20px;font-size:12px;text-align:center;">Réf visuelle chargée :<br><b>${nameDisplay}</b>... 🖼️</div>`;
-        
-        // Mettre à jour l'indication visuelle dans la zone de feedback " matches" (tu dois créer un div id="refActive" dans ton HTML)
-        const activeRefDiv = document.getElementById('refActive');
-        if (activeRefDiv) {
-            activeRefDiv.innerHTML = `
-                <div style="margin-bottom:10px;text-align:center;border:1px dashed var(--accent);padding:10px;border-radius:8px;">
-                    <p style="font-size:10px;color:#aaa;margin-top:0;">Image active :</p>
-                    <img src="data:${mime};base64,${base64Data}" style="width:100px;height:100px;object-fit:cover;border-radius:4px;border:2px solid var(--accent);">
-                    <p style="font-size:9px;color:#aaa;">${nameDisplay}</p>
-                    <button onclick="window.clearActiveReference()" style="background:#333;color:white;border:none;padding:5px 10px;border-radius:4px;font-size:10px;margin-top:5px;">Effacer</button>
-                </div>`;
-            activeRefDiv.style.display = 'block';
-        }
-    }
-
-    // NOUVEAU : Effacer la référence
-    window.clearActiveReference = () => {
-        currentReferenceBase64 = null;
-        document.getElementById('refActive').innerHTML = '';
-        document.getElementById('resultArea').innerHTML = '<div style="color:#aaa;padding:20px;text-align:center;">Zone de résultat (Cliquez sur Générer)</div>';
+    // --- GESTION DES RÉFÉRENCES (Fix Image Input) ---
+    window.loadReferenceFromUrl = async (url) => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                currentReferenceBase64 = reader.result.split(',')[1];
+                document.getElementById('refPreview').src = reader.result;
+                document.getElementById('refName').textContent = url.split('/').pop();
+                document.getElementById('selectedRefDisplay').style.display = 'block';
+            };
+            reader.readAsDataURL(blob);
+        } catch (e) { console.error("Erreur image:", e); }
     };
 
-    // Convertisseur Blob vers Base64 partagé
-    function convertBlobToBase64(blob, nameDisplay) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const b64encoded = reader.result.split(',')[1];
-            // On récupère le mimeType du blob
-            setReferenceUI(b64encoded, blob.type, nameDisplay);
-        };
-        reader.readAsDataURL(blob);
-    }
-
-    // Handler pour l'upload local (Fix REGRESSION 3)
     window.handleLocalRef = (input) => {
         if (input.files && input.files[0]) {
-            convertBlobToBase64(input.files[0], `Locale: ${input.files[0].name}`);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                currentReferenceBase64 = reader.result.split(',')[1];
+                document.getElementById('refPreview').src = reader.result;
+                document.getElementById('refName').textContent = input.files[0].name;
+                document.getElementById('selectedRefDisplay').style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
         }
     };
 
-    // --- UI & LOGIQUE DE PROMPT ---
-    function processPrompt() {
-        const text = document.getElementById('promptResume').value;
-        const layer = document.getElementById('highlightLayer');
-        
-        layer.innerHTML = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;border-radius:2px;color:${promptDb[m].color}">${m}</span>` : m)
-            .replace(/\n/g, '<br>') + (text.endsWith('\n') ? ' ' : '');
-
-        let full = text;
-        (text.match(/(:\w[\w-]*)/g) || []).forEach(t => {
-            if (promptDb[t]) full = full.replace(t, promptDb[t].text.replace(/\[Use.*?\]\s*/gi, '').trim());
-        });
-
-        const vRegex = /{{(.*?)}}/g;
-        let vFound = new Set(), m;
-        while ((m = vRegex.exec(full)) !== null) vFound.add(m[1]);
-        
-        renderVars(vFound);
-        
-        let final = full;
-        vFound.forEach(v => {
-            final = final.replace(new RegExp(`{{${v}}}`, 'g'), currentVariables[v] || `[${v}]`);
-        });
-        document.getElementById('promptComplet').value = final;
-    }
-
-    function renderVars(vSet) {
-        const sig = Array.from(vSet).sort().join(',');
-        if (lastRenderedVars === sig) return;
-        lastRenderedVars = sig;
-        const cont = document.getElementById('variablesContainer');
-        const list = document.getElementById('variablesList');
-        if (vSet.size === 0) { cont.style.display = 'none'; return; }
-        cont.style.display = 'flex';
-        list.innerHTML = '';
-        vSet.forEach(v => {
-            if (currentVariables[v] === undefined) currentVariables[v] = '';
-            const d = document.createElement('div');
-            d.className = 'var-row';
-            d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
-            list.appendChild(d);
-        });
-    }
-
-    // Fonction Nouvelle Génération (Fix Workflow)
-    window.newGeneration = () => {
-        document.getElementById('resultArea').innerHTML = `<div style="color:#aaa;padding:20px;text-align:center;">Prêt pour une nouvelle requête...</div>`;
-        window.clearActiveReference(); // On nettoie aussi la référence visuelle
-        document.getElementById('promptResume').focus();
+    window.clearActiveReference = () => {
+        currentReferenceBase64 = null;
+        document.getElementById('selectedRefDisplay').style.display = 'none';
     };
 
-    // --- API GÉNÉRATION (Version Blindée) ---
+    // --- GÉNÉRATION (HYBRIDE IMAGEN/GEMINI) ---
     async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
@@ -366,90 +249,100 @@
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("On manque de data ! (Clé + Prompt)");
-        
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération en cours (avec réf: ${currentReferenceBase64 ? 'OUI' : 'NON'})... 🎨</div>`;
+        if (!key || !prompt) return alert("Besoin de la clé et du prompt !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération en cours... ${currentReferenceBase64 ? '🖼️ Reference incluse' : ''}</div>`;
 
         try {
-            // Pour Imagen 4 (001), l'endpoint est :predict dans v1beta
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${key}`;
+            const isImagen = model.includes('imagen');
+            const method = isImagen ? 'predict' : 'generateContent';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
+
+            // PAYLOAD ADAPTÉ
+            let body;
+            if (isImagen) {
+                body = {
+                    instances: [{
+                        prompt: prompt,
+                        image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined
+                    }],
+                    parameters: { sampleCount: 1, aspectRatio: ratio, outputMimeType: "image/jpeg" }
+                };
+            } else {
+                // Format Gemini Multimodal
+                const parts = [{ text: prompt }];
+                if (currentReferenceBase64) parts.push({ inline_data: { mime_type: "image/png", data: currentReferenceBase64 } });
+                body = { contents: [{ parts: parts }] };
+            }
 
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    instances: [{ 
-                        prompt: prompt,
-                        // NOUVEAU : Envoi de la référence Base64Encoded
-                        image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined
-                    }],
-                    parameters: { 
-                        sampleCount: 1, 
-                        aspectRatio: ratio,
-                        outputMimeType: "image/jpeg"
-                    }
-                })
+                body: JSON.stringify(body)
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
 
             const b64 = data.predictions?.[0]?.bytesBase64Encoded || 
+                        data.predictions?.[0]?.bytesBase64 || 
                         data.generatedImages?.[0]?.image?.imageBytes;
 
             if (b64) {
-                // On récupère le mimeType du render
                 const mime = data.predictions?.[0]?.mimeType || "image/png";
-                
                 area.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
-                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:2px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.4);">
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
+                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:2px solid var(--accent);">
                         <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <button id="btnNewImage" onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; font-weight:bold; font-size:12px; cursor:pointer;">Nouvelle requête</button>
-                            <a href="data:${mime};base64,${b64}" download="lotus-render.png" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer</button>
+                            <button onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; cursor:pointer;">Nouveau</button>
                         </div>
                     </div>`;
             } else {
-                throw new Error("200 OK reçu, mais format de pixels inconnu. Vérifie la console.");
+                // Si c'est Gemini Flash (Texte), on affiche le texte
+                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de pixels.";
+                area.innerHTML = `<div style="color:#aaa; padding:20px; white-space:pre-wrap; text-align:left;">${txt}</div>`;
             }
-
         } catch (e) {
-            console.error("Détails IT:", e);
-            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                <h3 style="margin-top:0">❌ Échec du Render</h3>
-                <pre style="white-space:pre-wrap;">${e.message}</pre>
-                <p style="font-size:10px; color:#aaa; margin-top:10px;">💡 Conseil IT : Si tu utilisais un modèle 'Flash' (Texte seulement) par erreur, c'est pour ça que ça n'a pas dessiné.</p>
-            </div>`;
+            area.innerHTML = `<div style="color:#ff4d4d; padding:15px; background:#2b0000; border-radius:8px;">${e.message}</div>`;
         }
     }
 
-    // --- EXPORTS & INIT ---
+    // --- DEBUG & INIT ---
+    window.debugListModels = async () => {
+        const k = document.getElementById('apiKey').value;
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
+        const d = await r.json();
+        console.table(d.models.map(m => ({ Nom: m.name, Methodes: m.supportedGenerationMethods.join(', ') })));
+        alert("Liste envoyée dans la console (F12) !");
+    };
+
+    window.newGeneration = () => {
+        document.getElementById('resultArea').innerHTML = '<div style="color:#aaa;padding:20px;">Prêt.</div>';
+        document.getElementById('promptResume').focus();
+    };
+
     window.insertTag = (t) => {
         const a = document.getElementById('promptResume');
         a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
-        processPrompt();
+        window.processPrompt();
     };
-    window.processPrompt = processPrompt;
-    window.updateVar = (n, v) => { currentVariables[n] = v; processPrompt(); };
-    window.copyPrompt = () => {
-        const c = document.getElementById('promptComplet');
-        c.select(); document.execCommand('copy'); alert("Copié !");
+
+    window.processPrompt = () => {
+        const text = document.getElementById('promptResume').value;
+        const layer = document.getElementById('highlightLayer');
+        layer.innerHTML = text.replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;color:${promptDb[m].color}">${m}</span>` : m);
+        let final = text;
+        (text.match(/(:\w[\w-]*)/g) || []).forEach(t => { if(promptDb[t]) final = final.replace(t, promptDb[t].text); });
+        document.getElementById('promptComplet').value = final;
     };
-    window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
-    window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
-    window.manualLoad = () => loadYaml(document.getElementById('ymlPath').value);
-    window.generateImage = generateImage;
-    // On retire window.checkModels()
 
     window.onload = () => {
         loadYaml();
         const k = localStorage.getItem('gemini_api_key');
         if (k) document.getElementById('apiKey').value = k;
-        const pr = document.getElementById('promptResume');
-        const hl = document.getElementById('highlightLayer');
-        pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
+        document.getElementById('promptResume').addEventListener('input', window.processPrompt);
     };
+    window.generateImage = generateImage;
 </script>
 
 </body>

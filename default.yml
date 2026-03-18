@@ -40,7 +40,7 @@ matches:
 
   ### KAE - RÉFÉRENCES
   - trigger: ":kae-ref"
-    replace: "Character sheet of Kaelith Solari"
+    replace: "Character sheet of Kae"
     image: "assets/ks.c.jpeg"
 
 
