@@ -141,13 +141,16 @@
 </div>
 
 <script type="module">
+    // On importe le SDK au cas où, mais on va privilégier le fetch direct pour le debug
+    import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
+
     // --- VARIABLES GLOBALES ---
     let promptDb = {};
     let currentVariables = {};
     let lastRenderedVars = "";
-    const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933'];
+    const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- FONCTIONS DE BASE ---
+    // --- CHARGEMENT & PARSING YAML ---
     async function loadYaml(fileName = 'default.yml') {
         const sidebarContent = document.getElementById('sidebarContent');
         if (sidebarContent) sidebarContent.innerHTML = '<p style="color: #888; text-align: center;">Sync en cours... 🔄</p>';
@@ -155,23 +158,25 @@
 
         try {
             const response = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error();
+            if (!response.ok) throw new Error(`Impossible de lire le fichier: ${response.status}`);
             const content = await response.text();
             renderSidebar(content);
             processPrompt(); 
         } catch (err) {
-            if (sidebarContent) sidebarContent.innerHTML = `<p style="color: #ff4d4d; padding: 15px;">Erreur: Impossible de lire ${fileName}.</p>`;
+            if (sidebarContent) sidebarContent.innerHTML = `<p style="color: #ff4d4d; padding: 15px;">Erreur: ${err.message}</p>`;
         }
     }
 
     function renderSidebar(content) {
         const root = document.getElementById('sidebarContent');
+        if (!root) return;
         root.innerHTML = '';
         const lines = content.split('\n');
         let currentDetails = null;
         let contentDiv = null;
         let categoryIndex = 0;
 
+        // Regex robuste pour capturer les triggers et leur contenu (simple ligne ou bloc multi-lignes)
         const matchRegex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
         lines.forEach((line, index) => {
@@ -198,18 +203,24 @@
                 let replace = (match[2] || match[3] || "").trim().replace(/\s+/g, ' ');
                 if ([':espanso', ':txt', ':date', ':shell'].includes(trigger)) return;
 
-                promptDb[trigger] = { text: replace, color: colorPalette[(categoryIndex - 1) % colorPalette.length] || '#888' };
+                promptDb[trigger] = { 
+                    text: replace, 
+                    color: colorPalette[(categoryIndex - 1) % colorPalette.length] || '#888' 
+                };
+
                 const btn = document.createElement('button');
                 btn.className = 'trigger-btn';
                 btn.innerHTML = `<strong style="color: ${promptDb[trigger].color}">${trigger}</strong><small>${replace}</small>`;
-                btn.onclick = () => insertTag(trigger);
+                btn.onclick = () => window.insertTag(trigger);
                 if (contentDiv) contentDiv.appendChild(btn);
             }
         });
     }
 
+    // --- ÉDITION & UI ---
     function insertTag(trigger) {
         const textarea = document.getElementById('promptResume');
+        if (!textarea) return;
         textarea.value = textarea.value + (textarea.value.endsWith(' ') || textarea.value === '' ? '' : ' ') + trigger + ' ';
         textarea.focus();
         processPrompt();
@@ -218,8 +229,11 @@
     function processPrompt() {
         const textarea = document.getElementById('promptResume');
         const highlightLayer = document.getElementById('highlightLayer');
+        if (!textarea || !highlightLayer) return;
+
         const rawText = textarea.value;
 
+        // 1. Highlight des tags dans le calque arrière
         let highlightedHTML = rawText
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') 
             .replace(/(:\w[\w-]*)/g, (match) => {
@@ -232,16 +246,20 @@
         if (rawText[rawText.length - 1] === '\n') highlightedHTML += ' ';
         highlightLayer.innerHTML = highlightedHTML;
 
+        // 2. Construction du prompt complet (remplacement des tags par leur texte)
         let fullPrompt = rawText;
         const foundTags = rawText.match(/(:\w[\w-]*)/g) || [];
         foundTags.forEach(tag => {
             if (promptDb[tag]) {
+                // Nettoyage des directives [Use image.jpg] pour l'IA
                 let cleanReplace = promptDb[tag].text.replace(/\[Use.*?\]\s*/gi, '').trim();
                 fullPrompt = fullPrompt.replace(tag, cleanReplace);
             }
         });
 
+        // 3. Gestion des variables {{...}}
         extractAndRenderVariables(fullPrompt);
+        
         let finalOutput = fullPrompt;
         Object.keys(currentVariables).forEach(varName => {
             const val = currentVariables[varName] || `[${varName}]`;
@@ -258,6 +276,8 @@
 
         const container = document.getElementById('variablesContainer');
         const listDiv = document.getElementById('variablesList');
+        if (!container || !listDiv) return;
+
         const currentVarsSignature = Array.from(varsFound).sort().join(',');
 
         if (lastRenderedVars === currentVarsSignature) {
@@ -289,29 +309,35 @@
 
     function copyPrompt() {
         const text = document.getElementById('promptComplet');
-        if (!text.value) return;
+        if (!text || !text.value) return;
         text.select();
         document.execCommand('copy');
         alert("Prompt complet copié ! 📋");
     }
 
     function clearAll() {
-        document.getElementById('promptResume').value = '';
+        const res = document.getElementById('promptResume');
+        if (res) res.value = '';
         currentVariables = {};
         processPrompt();
     }
 
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('collapsed');
+        const sb = document.getElementById('sidebar');
+        if (sb) sb.classList.toggle('collapsed');
     }
 
-    function saveApiKey(val) { localStorage.setItem('gemini_api_key', val); }
+    // --- API & LOCAL STORAGE ---
+    function saveApiKey(val) { 
+        localStorage.setItem('gemini_api_key', val); 
+    }
+
     function loadSavedApiKey() {
         const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) document.getElementById('apiKey').value = savedKey;
+        const input = document.getElementById('apiKey');
+        if (savedKey && input) input.value = savedKey;
     }
 
-    // --- LA GÉNÉRATION (Version Fetch robuste) ---
     async function generateImage() {
         const apiKey = document.getElementById('apiKey').value.trim();
         const promptText = document.getElementById('promptComplet').value.trim();
@@ -323,8 +349,10 @@
         resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Génération Nano Banana 2... ⏳</div>`;
 
         try {
+            // Si tu as un 404, c'est peut-être que l'endpoint exact est différent dans ta région.
+            // On essaie v1beta, qui est l'endpoint standard pour les modèles d'images Gemini.
             const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
-            // On tente le fetch direct d'abord. Si ça fail, l'utilisateur devra utiliser l'extension CORS.
+            
             const response = await fetch(googleUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -340,34 +368,36 @@
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(`Erreur HTTP ${response.status}\n${JSON.stringify(errData, null, 2)}`);
+                throw new Error(`CRITICAL HTTP ${response.status}\n${JSON.stringify(errData, null, 2)}`);
             }
 
             const data = await response.json();
             const base64Image = data.generatedImages?.[0]?.image?.imageBytes;
 
             if (base64Image) {
-                resultArea.innerHTML = `<img src="data:image/jpeg;base64,${base64Image}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow: 0 4px 15px rgba(0,212,255,0.3);">
-                                       <button class="btn-generate" onclick="window.generateImage()">Regénérer ✨</button>`;
+                resultArea.innerHTML = `
+                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;">
+                    <button class="btn-generate" onclick="window.generateImage()">Regénérer ✨</button>
+                `;
             } else {
-                throw new Error("Image non trouvée dans la réponse JSON.");
+                throw new Error(`200 OK, mais image absente.\nRéponse brute:\n${JSON.stringify(data, null, 2)}`);
             }
         } catch (error) {
-            let msg = error.message;
-            if (msg.includes("fetch")) {
-                msg = "BLOCAGE RÉSEAU (CORS) : \nLe navigateur refuse la connexion directe. \n\n👉 SOLUTION : Active ton extension 'Allow CORS' sur ton navigateur.";
-            }
-            resultArea.innerHTML = `<div style="color:#ff4d4d; padding:20px; background:#2b0000; border-radius:8px; overflow:auto; height:100%; font-family:monospace; font-size:12px;">❌ Erreur: ${msg}</div>
-                                   <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
+            resultArea.innerHTML = `
+                <div style="color:#ff4d4d; padding:20px; background:#2b0000; border-radius:8px; overflow:auto; height:100%; font-family:monospace; font-size:12px; text-align:left;">
+                    <h3 style="margin-top:0;">❌ Erreur API</h3>
+                    <pre style="white-space: pre-wrap;">${error.message}</pre>
+                </div>
+                <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
         }
     }
 
     async function manualLoad() {
-        const fileName = document.getElementById('ymlPath').value.trim();
-        if (fileName) await loadYaml(fileName);
+        const pathInput = document.getElementById('ymlPath');
+        if (pathInput) await loadYaml(pathInput.value.trim());
     }
 
-    // --- ATTACHEMENT GLOBAL (Crucial pour le type="module") ---
+    // --- EXPOSER LES FONCTIONS AU HTML ---
     window.manualLoad = manualLoad;
     window.generateImage = generateImage;
     window.insertTag = insertTag;
@@ -378,14 +408,21 @@
     window.saveApiKey = saveApiKey;
     window.updateVar = updateVar;
 
+    // --- INITIALISATION ---
     window.onload = () => {
-        loadYaml();
+        loadYaml('default.yml');
         loadSavedApiKey();
     };
 
-    document.getElementById('promptResume').addEventListener('scroll', function() {
-        document.getElementById('highlightLayer').scrollTop = this.scrollTop;
-    });
+    // Scroll sync pour l'éditeur
+    const resEditor = document.getElementById('promptResume');
+    const highLayer = document.getElementById('highlightLayer');
+    if (resEditor && highLayer) {
+        resEditor.addEventListener('scroll', () => {
+            highLayer.scrollTop = resEditor.scrollTop;
+        });
+    }
+
 </script>
 </body>
 </html>
