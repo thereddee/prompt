@@ -49,7 +49,7 @@
         <div class="input-group">
             <label>Modèle IA</label>
             <select id="modelSelect">
-                <option value="imagen-4.0-generate-001">Imagen 4 e (Le top! 🏆)</option>
+                <option value="imagen-4.0-generate-001">Imagen 4 b (Le top! 🏆)</option>
                 <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (3.1 Flash)</option>
                 <option value="gemini-3-pro-image-preview">Nano Banana Pro (3.0 Pro)</option>
             </select>
@@ -207,36 +207,46 @@
     // --- GÉNÉRATION BLINDÉE ---
 
 
-    async function generateImage() {
+async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
-        const promptText = document.getElementById('promptComplet').value.trim();
+        const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !promptText) return;
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Extraction des pixels de ${model}... 🎨</div>`;
+        if (!key || !prompt) return alert("Richard, on a besoin de gaz (Clé + Prompt) !");
+        
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Appel direct vers ${model}... 🚀</div>`;
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
+            // DÉTECTION DE L'ENDPOINT : 'predict' pour Imagen 4, 'generateContent' pour le reste
+            const isImagen = model.includes('imagen');
+            const method = isImagen ? 'predict' : 'generateContent';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
+
+            // PAYLOAD ADAPTÉ : Imagen 4 veut 'instances', Gemini veut 'contents'
+            const payload = isImagen ? {
+                instances: [{ prompt: prompt }],
+                parameters: { sampleCount: 1, aspectRatio: ratio }
+            } : {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
 
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    instances: [{ prompt: promptText }],
-                    parameters: { sampleCount: 1, aspectRatio: ratio }
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
 
-            // --- LOGIQUE D'EXTRACTION ROBUSTE ---
-            // On cherche dans tous les formats possibles (Imagen 4, Gemini 3, Vertex)
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes || 
-                        data.predictions?.[0]?.bytesBase64 || 
-                        data.predictions?.[0]?.image?.imageBytes;
+            if (!res.ok) {
+                throw new Error(data.error?.message || `HTTP ${res.status}`);
+            }
+
+            // EXTRACTION DU RENDU : On check les deux formats (Base64 vs Texte)
+            const b64 = data.predictions?.[0]?.bytesBase64 || 
+                        data.generatedImages?.[0]?.image?.imageBytes;
 
             if (b64) {
                 area.innerHTML = `
@@ -244,23 +254,25 @@
                         <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 20px rgba(0,212,255,0.3);">
                         <div style="margin-top:10px; display:flex; gap:10px;">
                             <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">💾 SAUVEGARDER</a>
+                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-size:12px;">💾 Sauvegarder</a>
                         </div>
                     </div>`;
             } else {
-                // Si on ne trouve rien, on affiche le JSON pour debugger
-                console.log("JSON reçu de Google:", data);
-                throw new Error("Pixels introuvables. On a reçu le JSON, mais l'image n'est pas là où on l'attendait. Regarde la console (F12).");
+                // Si c'est du texte (Gemini 2.5), on l'affiche proprement
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Réponse reçue, mais aucun pixel détecté.";
+                area.innerHTML = `<div style="color:#aaa; font-size:13px; text-align:left; padding:20px; overflow:auto; height:100%; white-space:pre-wrap; background:#0a0a0a; border-radius:8px;">${aiText}</div>`;
             }
 
         } catch (e) {
-            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                <h3 style="margin-top:0">❌ Erreur de Rendu</h3>
-                <pre style="white-space:pre-wrap;">${e.message}</pre>
-            </div>`;
+            console.error("Détails IT:", e);
+            area.innerHTML = `
+                <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow-auto:auto; height:100%">
+                    <h3 style="margin-top:0">❌ Échec du Fetch</h3>
+                    <pre style="white-space:pre-wrap;">${e.message}</pre>
+                    <p style="font-size:10px; color:#888;">Note : Ton extension Anti-CORS semble active, c'est peut-être l'URL ou le Modèle qui est invalide.</p>
+                </div>`;
         }
     }
-
 
 
 
