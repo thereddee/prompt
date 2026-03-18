@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Lotus de Fer - Studio de Génération</title>
+    <title>Studio de Génération V0.1</title>
     <style>
         :root { --bg-main: #121212; --bg-panel: #1e1e1e; --border: #333; --accent: #00d4ff; --text: #e0e0e0; --tag-color: #ff4d4d; }
         * { box-sizing: border-box; }
@@ -146,6 +146,13 @@
     let lastRenderedVars = "";
     let currentReferenceBase64 = null; // Stocke l'image de référence
 
+    const COSTS = {
+        "gemini-2.5-flash-image": { input: 0.10 / 1000000, output: 0.40 / 1000000 },
+        "gemini-3.1-flash-image-preview": { input: 0.10 / 1000000, output: 0.40 / 1000000 },
+        "gemini-3-pro-image-preview": { input: 1.25 / 1000000, output: 3.75 / 1000000 },
+        "imagen-4.0-fast-generate-001": { input: 0.0, output: 0.03 }, // Imagen charge souvent à l'image fixe
+        "default": { input: 0.10 / 1000000, output: 0.40 / 1000000 }
+    };
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
     // --- PARSING YAML (Stable) ---
@@ -207,6 +214,37 @@
         });
     }
 
+    // Fonction pour calculer et afficher le bloc de stats
+    function renderStatsBlock(model, usage) {
+        if (!usage) return "";
+
+        const config = COSTS[model] || COSTS["default"];
+        
+        // Calcul du coût
+        let cost = 0;
+        if (model.includes('imagen')) {
+            // Souvent un prix fixe par image générée
+            cost = config.output; 
+        } else {
+            cost = (usage.promptTokenCount * config.input) + (usage.candidatesTokenCount * config.output);
+        }
+
+        // Formatage du bloc Obsidian
+        return `
+    <div class="stats-block" style="margin-top:15px; background:#111; border:1px solid #333; border-radius:4px; padding:10px; font-family:monospace; font-size:11px; color:#00d4ff; text-align:left; width: 100%;">
+    <pre style="margin:0;">
+    \`\`\`stat-block
+    Model: ${model}
+    Input Tokens:  ${usage.promptTokenCount} (Text:${usage.promptTokensDetails?.[0]?.tokenCount || '?'}, Img:${usage.promptTokensDetails?.[1]?.tokenCount || '?'})
+    Output Tokens: ${usage.candidatesTokenCount}
+    Total Tokens:  ${usage.totalTokenCount}
+    ---
+    Estimated Cost: $${cost.toFixed(4)} USD
+    \`\`\`
+    </pre>
+    </div>`;
+}
+
     // --- GESTION DES RÉFÉRENCES (Fix Image Input) ---
     window.loadReferenceFromUrl = async (url) => {
         try {
@@ -242,33 +280,30 @@
     };
 
     // --- GÉNÉRATION (HYBRIDE IMAGEN/GEMINI) ---
-    async function generateImage() {
+async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Besoin de la clé et du prompt !");
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération en cours... ${currentReferenceBase64 ? '🖼️ Reference incluse' : ''}</div>`;
+        if (!key || !prompt) return alert("Richard, on a besoin de gaz (Clé + Prompt) !");
+        
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Extraction des pixels (${model})... 🚀</div>`;
 
         try {
             const isImagen = model.includes('imagen');
+            // Imagen 4 utilise :predict, les autres :generateContent
             const method = isImagen ? 'predict' : 'generateContent';
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
 
-            // PAYLOAD ADAPTÉ
             let body;
             if (isImagen) {
                 body = {
-                    instances: [{
-                        prompt: prompt,
-                        image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined
-                    }],
+                    instances: [{ prompt: prompt, image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined }],
                     parameters: { sampleCount: 1, aspectRatio: ratio, outputMimeType: "image/jpeg" }
                 };
             } else {
-                // Format Gemini Multimodal
                 const parts = [{ text: prompt }];
                 if (currentReferenceBase64) parts.push({ inline_data: { mime_type: "image/png", data: currentReferenceBase64 } });
                 body = { contents: [{ parts: parts }] };
@@ -281,29 +316,44 @@
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
+            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
 
-            const b64 = data.predictions?.[0]?.bytesBase64Encoded || 
-                        data.predictions?.[0]?.bytesBase64 || 
-                        data.generatedImages?.[0]?.image?.imageBytes;
+            // --- LA GRANDE CHASSE AUX PIXELS (MULTI-FORMAT) ---
+            const b64 = data.predictions?.[0]?.bytesBase64Encoded || // Imagen 4 Standard
+                        data.predictions?.[0]?.bytesBase64 ||        // Imagen 4 Variant
+                        data.generatedImages?.[0]?.image?.imageBytes || // Legacy
+                        data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data; // GEMINI FLASH IMAGE (Ton cas !)
+
+            // On essaie de catcher le mimeType dynamique aussi
+            const mime = data.predictions?.[0]?.mimeType || 
+                         data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType || 
+                         "image/png";
 
             if (b64) {
-                const mime = data.predictions?.[0]?.mimeType || "image/png";
+                const mime = data.predictions?.[0]?.mimeType || 
+                            data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType || 
+                            "image/png";
+                
+                // On génère le bloc de stats
+                const statsHtml = renderStatsBlock(model, data.usageMetadata);
+
                 area.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
-                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:2px solid var(--accent);">
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
+                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:70%; border-radius:8px; border:2px solid var(--accent);">
                         <div style="margin-top:10px; display:flex; gap:10px;">
                             <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer</button>
                             <button onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; cursor:pointer;">Nouveau</button>
                         </div>
+                        ${statsHtml}
                     </div>`;
             } else {
-                // Si c'est Gemini Flash (Texte), on affiche le texte
-                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de pixels.";
-                area.innerHTML = `<div style="color:#aaa; padding:20px; white-space:pre-wrap; text-align:left;">${txt}</div>`;
+                // Fallback texte si jamais le modèle décide de juste jaser
+                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "Réponse reçue, mais le format de l'image est inconnu.";
+                area.innerHTML = `<div style="color:#aaa; padding:20px; text-align:left; white-space:pre-wrap;">${txt}</div>`;
+                console.log("Structure reçue mais non décodée :", data);
             }
         } catch (e) {
-            area.innerHTML = `<div style="color:#ff4d4d; padding:15px; background:#2b0000; border-radius:8px;">${e.message}</div>`;
+            area.innerHTML = `<div style="color:#ff4d4d; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px;">${e.message}</div>`;
         }
     }
 
