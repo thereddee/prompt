@@ -215,10 +215,14 @@
         area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Appel API Direct... 🚀</div>';
 
         try {
-            // NOTE: On utilise le modèle choisi dans le dropdown
-            // Pour l'image, l'endpoint est souvent :generateImages
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
+// Change l'URL pour pointer vers le texte
+            const model = "gemini-2.5-flash"; // Un modèle que tu AS dans ta liste
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
+            // Change le body pour le format texte
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: prompt }] }] 
+            })
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
