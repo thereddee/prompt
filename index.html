@@ -207,35 +207,70 @@
     }
 
     // --- API ---
-    async function generateImage() {
+async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Data manquante (Clé ou Prompt)");
-        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Génération...</div>';
+        if (!key || !prompt) return alert("Données manquantes : Clé ou Prompt vide.");
+        
+        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Appel API en cours... ⏳</div>';
 
         try {
-            // On tente l'endpoint Image, sinon on fallback sur un message clair
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
-            const res = await fetch(url, {
+            // URL de base pour l'image
+            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${key}`;
+            
+            // On passe par le proxy pour éviter le CORS direct
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
+
+            const res = await fetch(proxyUrl, {
                 method: 'POST',
-                body: JSON.stringify({ instances: [{prompt}], parameters: {sampleCount:1, aspectRatio:ratio} })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    instances: [{ prompt: prompt }], 
+                    parameters: { sampleCount: 1, aspectRatio: ratio } 
+                })
             });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || "Erreur Inconnue");
-
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
-            if (b64) {
-                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px">`;
-            } else {
-                area.innerHTML = `<div style="color:orange;font-size:12px;padding:10px">Réponse reçue, mais pas d'image. Ce modèle (${model}) ne supporte probablement pas le Text-to-Image.</div>`;
+            // --- LA PROTECTION "ANTI-JSON VIDE" ---
+            const text = await res.text(); // On lit d'abord le texte brut
+            let data = {};
+            
+            if (text) {
+                try {
+                    data = JSON.parse(text); // On essaie de parser si y'a du texte
+                } catch (e) {
+                    throw new Error(`Réponse non-JSON reçue : ${text.substring(0, 100)}`);
+                }
             }
+
+            if (!res.ok) {
+                // Si l'API renvoie une erreur, on l'affiche proprement
+                const errMsg = data.error?.message || `Erreur HTTP ${res.status}`;
+                throw new Error(errMsg);
+            }
+
+            // Extraction du Base64
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
+            
+            if (b64) {
+                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow: 0 4px 15px rgba(0,0,0,0.5)">`;
+            } else {
+                area.innerHTML = `<div style="color:orange;font-size:12px;padding:20px;background:#211">
+                    ✅ Requête acceptée, mais aucune image retournée.<br>
+                    <strong>Détail :</strong> Le modèle ${model} n'a peut-être pas accès à la génération d'image pour ta clé.
+                </div>`;
+            }
+
         } catch (e) {
-            area.innerHTML = `<div style="color:red;font-size:12px;padding:10px;background:#200;width:100%">Erreur: ${e.message}</div>`;
+            console.error("Erreur complète :", e);
+            area.innerHTML = `<div style="color:#ff4d4d;font-size:12px;padding:15px;background:#2b0000;border:1px solid #ff4d4d;border-radius:8px;text-align:left;overflow:auto;height:100%">
+                <h3 style="margin-top:0">❌ Erreur de Génération</h3>
+                <pre style="white-space:pre-wrap;font-family:monospace">${e.message}</pre>
+                <p style="font-size:10px;color:#aaa;margin-top:10px">Note : Si c'est un 404, l'endpoint Gemini 3 n'est peut-être pas encore ouvert sur ta région.</p>
+            </div>`;
         }
     }
 
