@@ -145,20 +145,22 @@
     let promptDb = {}; // Dictionnaire global : { ":trigger": "replace text" }
     let currentVariables = {}; // Stocke les valeurs tapées par l'utilisateur
     const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933']; // Couleurs pour les tags
+    // --- GESTION DE LA CLÉ API ---
+    function saveApiKey(val) {
+        localStorage.setItem('gemini_api_key', val);
+    }
+
+    function loadSavedApiKey() {
+        const savedKey = localStorage.getItem('gemini_api_key');
+        if (savedKey) {
+            document.getElementById('apiKey').value = savedKey;
+        }
+    }
+
 
     // --- CHARGEMENT DU FICHIER YML ---
     async function loadYaml() {
-        // --- GESTION DE LA CLÉ API ---
-        function saveApiKey(val) {
-            localStorage.setItem('gemini_api_key', val);
-        }
 
-        function loadSavedApiKey() {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            if (savedKey) {
-                document.getElementById('apiKey').value = savedKey;
-            }
-        }
 
         const fileName = document.getElementById('ymlPath').value.trim();
         const sidebarContent = document.getElementById('sidebarContent');
@@ -386,8 +388,8 @@ function processPrompt() {
 
         try {
             // Pour l'image, on repasse sur l'endpoint v1beta qui supporte "generateImages"
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
-            
+            // const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
             const response = await fetch(endpoint, {
                 method: 'POST',
                 mode: 'cors',
