@@ -49,7 +49,7 @@
         <div class="input-group">
             <label>Modèle IA</label>
             <select id="modelSelect">
-                <option value="imagen-4.0-generate-001">Imagen 4 3 (Le top! 🏆)</option>
+                <option value="imagen-4.0-generate-001">Imagen 4 4 (Le top! 🏆)</option>
                 <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (3.1 Flash)</option>
                 <option value="gemini-3-pro-image-preview">Nano Banana Pro (3.0 Pro)</option>
             </select>
@@ -208,75 +208,70 @@
 
 
 async function generateImage() {
-        const key = document.getElementById('apiKey').value.trim();
-        const promptText = document.getElementById('promptComplet').value.trim();
-        const model = document.getElementById('modelSelect').value;
-        const ratio = document.getElementById('aspectRatioSelect').value;
-        const area = document.getElementById('resultArea');
+    const key = document.getElementById('apiKey').value.trim();
+    const promptText = document.getElementById('promptComplet').value.trim();
+    const model = document.getElementById('modelSelect').value;
+    const ratio = document.getElementById('aspectRatioSelect').value;
+    const area = document.getElementById('resultArea');
 
-        if (!key || !promptText) return alert("Richard, manque de fuel ! (Clé ou Prompt)");
+    if (!key || !promptText) return alert("On manque de data pour décoller, Richard !");
+    
+    area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Connexion directe v1beta vers ${model}... 🚀</div>`;
+
+    try {
+        // On force le v1beta car Imagen 4 et Gemini 3.1 Preview y vivent
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
         
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Connexion directe à ${model}... 🚀</div>`;
+        const response = await fetch(url, {
+            method: 'POST',
+            // On ne met pas de headers complexes pour éviter que le CORS bloque le Preflight (OPTIONS)
+            body: JSON.stringify({
+                instances: [{ prompt: promptText }],
+                parameters: { 
+                    sampleCount: 1, 
+                    aspectRatio: ratio,
+                    outputMimeType: "image/jpeg"
+                }
+            })
+        });
 
+        const rawText = await response.text();
+        let data = {};
+        
         try {
-            // Utilisation de v1beta pour les modèles preview comme le 3.1 ou Imagen 4
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
-
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    instances: [{ prompt: promptText }],
-                    parameters: { 
-                        sampleCount: 1, 
-                        aspectRatio: ratio,
-                        outputMimeType: "image/jpeg" 
-                    }
-                })
-            });
-
-            // On check le texte brut d'abord pour le debug
-            const raw = await res.text();
-            let data = {};
-            if (raw) {
-                try { data = JSON.parse(raw); } catch(e) { throw new Error("Réponse corrompue."); }
-            }
-
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
-
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
-
-            if (b64) {
-                area.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
-                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 20px rgba(0,212,255,0.2);">
-                        <div style="margin-top:10px;">
-                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; margin-left:10px; font-size:12px;">💾 Sauvegarder</a>
-                        </div>
-                    </div>`;
-            } else {
-                throw new Error("200 OK, mais pas d'image. Vérifie les logs.");
-            }
-
+            if (rawText) data = JSON.parse(rawText);
         } catch (e) {
-            console.error("IT Debug:", e);
-            area.innerHTML = `
-                <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                    <h3 style="margin-top:0">❌ Failed to Fetch / Error</h3>
-                    <p><b>Statut :</b> ${e.message}</p>
-                    <hr style="border:0; border-top:1px solid #500; margin:10px 0;">
-                    <p style="font-size:10px; color:#aaa;">
-                        1. Assure-toi que l'option <b>#3 (Access-Control-Allow-Headers)</b> est cochée dans ton extension.<br>
-                        2. L'option <b>#5 (Origin)</b> doit être sur <b>"*"</b>.<br>
-                        3. Rafraîchis la page (F5) après avoir changé les settings.
-                    </p>
-                </div>
-                <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
+            throw new Error(`Le serveur a répondu du texte brut (souvent un 404 HTML). Brute: ${rawText.substring(0, 100)}`);
         }
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || `Erreur HTTP ${response.status}`);
+        }
+
+        const b64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64;
+
+        if (b64) {
+            area.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
+                    <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 20px rgba(0,212,255,0.2);">
+                    <div style="margin-top:10px;">
+                        <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                    </div>
+                </div>`;
+        } else {
+            throw new Error("200 OK reçu, mais pas de pixels dans la réponse.");
+        }
+
+    } catch (e) {
+        console.error("DEBUG IT :", e);
+        area.innerHTML = `
+            <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
+                <h3 style="margin-top:0">❌ Échec du Render</h3>
+                <pre style="white-space:pre-wrap; font-family:monospace;">${e.message}</pre>
+                <p style="font-size:10px; color:#aaa; margin-top:10px;">💡 <b>Conseil IT :</b> Si tu as un 404, c'est que le modèle n'est pas activé pour l'API sur ton compte, même s'il est dans ton UI AI Studio.</p>
+            </div>`;
     }
+}
 
 
 
