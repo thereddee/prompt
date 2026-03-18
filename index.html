@@ -109,17 +109,17 @@
     let lastRenderedVars = "";
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- CHARGEMENT YAML ---
+    // --- LOGIQUE DE BASE (YAML & UI) ---
     async function loadYaml(fileName = 'default.yml') {
         const root = document.getElementById('sidebarContent');
-        if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Chargement... 🔄</p>';
+        if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Sync... 🔄</p>';
         try {
             const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!res.ok) throw new Error(`Fichier introuvable (${res.status})`);
+            if (!res.ok) throw new Error(`404: ${fileName}`);
             const text = await res.text();
             parseYaml(text);
         } catch (e) {
-            if (root) root.innerHTML = `<p style="color:red;padding:10px;">Erreur YAML: ${e.message}</p>`;
+            if (root) root.innerHTML = `<p style="color:red;padding:10px;">Erreur YAML</p>`;
         }
     }
 
@@ -157,7 +157,6 @@
         });
     }
 
-    // --- UI & LOGIQUE ---
     function processPrompt() {
         const text = document.getElementById('promptResume').value;
         const layer = document.getElementById('highlightLayer');
@@ -190,19 +189,21 @@
         lastRenderedVars = sig;
         const cont = document.getElementById('variablesContainer');
         const list = document.getElementById('variablesList');
-        if (vSet.size === 0) { cont.style.display = 'none'; return; }
-        cont.style.display = 'flex';
-        list.innerHTML = '';
-        vSet.forEach(v => {
-            if (currentVariables[v] === undefined) currentVariables[v] = '';
-            const d = document.createElement('div');
-            d.className = 'var-row';
-            d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
-            list.appendChild(d);
-        });
+        if (vSet.size === 0) { if(cont) cont.style.display = 'none'; return; }
+        if(cont) cont.style.display = 'flex';
+        if(list) {
+            list.innerHTML = '';
+            vSet.forEach(v => {
+                if (currentVariables[v] === undefined) currentVariables[v] = '';
+                const d = document.createElement('div');
+                d.className = 'var-row';
+                d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
+                list.appendChild(d);
+            });
+        }
     }
 
-    // --- API GENERATION (SANS PROXY - DIRECT HIT) ---
+    // --- API GÉNÉRATION (HYBRIDE TEXTE / IMAGE) ---
     async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
@@ -210,61 +211,54 @@
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Données manquantes : Clé ou Prompt vide.");
-        
-        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Appel API Direct... 🚀</div>';
+        if (!key || !prompt) return alert("Besoin d'une clé et d'un prompt !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Requête vers ${model}... 🚀</div>`;
 
         try {
-// Change l'URL pour pointer vers le texte
-            const model = "gemini-2.5-flash"; // Un modèle que tu AS dans ta liste
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const isImageModel = model.includes('imagen') || model.includes('image');
+            const method = isImageModel ? 'generateImages' : 'generateContent';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
 
-            // Change le body pour le format texte
-            body: JSON.stringify({ 
-                contents: [{ parts: [{ text: prompt }] }] 
-            })
+            // On ajuste le payload selon le modèle
+            const payload = isImageModel ? {
+                instances: [{ prompt: prompt }],
+                parameters: { sampleCount: 1, aspectRatio: ratio }
+            } : {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    instances: [{ prompt: prompt }], 
-                    parameters: { sampleCount: 1, aspectRatio: ratio } 
-                })
+                body: JSON.stringify(payload)
             });
 
             const text = await res.text();
             let data = {};
             if (text) data = JSON.parse(text);
 
-            if (!res.ok) {
-                throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
-            }
+            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
 
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
-            
-            if (b64) {
+            // Rendu selon le type de réponse
+            if (isImageModel && data.generatedImages) {
+                const b64 = data.generatedImages[0].image.imageBytes;
                 area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;">`;
             } else {
-                area.innerHTML = `<div style="color:orange;font-size:12px;padding:20px;background:#211;border:1px solid orange;border-radius:8px;">
-                    ✅ Requête acceptée (200 OK).<br>
-                    <strong>Mais :</strong> Aucune image reçue. Le modèle <u>${model}</u> ne supporte probablement pas la génération d'image via cet endpoint.
-                </div>`;
+                // Si c'est un modèle de texte (ou qu'on a juste du texte)
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data, null, 2);
+                area.innerHTML = `<div style="color:#aaa;font-size:12px;text-align:left;padding:15px;overflow:auto;height:100%;white-space:pre-wrap;">${aiText}</div>`;
             }
 
         } catch (e) {
-            console.error("Erreur détaillée :", e);
-            let advice = "Vérifie que ton extension 'Allow CORS' est bien ACTIVE.";
-            if (e.message.includes("404")) advice = "Le modèle ou l'endpoint n'existe pas.";
-            
-            area.innerHTML = `<div style="color:#ff4d4d;font-size:12px;padding:15px;background:#2b0000;border:1px solid #ff4d4d;border-radius:8px;text-align:left;overflow:auto;height:100%">
-                <h3 style="margin-top:0">❌ Erreur réseau / API</h3>
-                <pre style="white-space:pre-wrap;font-family:monospace">${e.message}</pre>
-                <p style="font-size:11px;color:#aaa;margin-top:10px">💡 <strong>Conseil :</strong> ${advice}</p>
+            area.innerHTML = `<div style="color:#ff4d4d;font-size:11px;padding:15px;background:#2b0000;border:1px solid #ff4d4d;border-radius:8px;text-align:left;overflow:auto;height:100%">
+                <h3 style="margin-top:0">❌ Erreur API</h3>
+                <pre style="white-space:pre-wrap;">${e.message}</pre>
+                <p style="color:#888;margin-top:10px">Si tu vois 'Unknown name instances', c'est que tu essaies d'envoyer un format image à un modèle qui attend du texte (ex: Gemini Flash).</p>
             </div>`;
         }
     }
 
-    // --- EXPORTS & INITIALISATION ---
+    // --- EXPORTS & INIT ---
     window.insertTag = (t) => {
         const a = document.getElementById('promptResume');
         a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
@@ -282,12 +276,10 @@
     window.generateImage = generateImage;
     window.checkModels = async () => {
         const k = document.getElementById('apiKey').value;
-        try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
-            const d = await r.json();
-            console.log("Modèles dispos:", d.models);
-            alert("Liste reçue. Regarde la console (F12).");
-        } catch(e) { alert("Erreur scan: " + e.message); }
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
+        const d = await r.json();
+        console.log("Modèles dispos:", d.models);
+        alert("Check la console F12");
     };
 
     window.onload = () => {
@@ -296,7 +288,7 @@
         if (k) document.getElementById('apiKey').value = k;
         const pr = document.getElementById('promptResume');
         const hl = document.getElementById('highlightLayer');
-        pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
+        if(pr && hl) pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
     };
 </script>
 
