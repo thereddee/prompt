@@ -47,11 +47,23 @@
             <input type="text" id="ymlPath" value="default.yml" onchange="window.manualLoad()">
         </div>
         <div class="input-group">
-            <label>Modèle IA</label>
+            <label for="modelSelect" style="color:var(--accent); font-size:12px; font-weight:bold;">MODÈLE IA (COÛT/IMG)</label>
             <select id="modelSelect">
-                <option value="imagen-4.0-generate-001">Imagen 4 🏆 2</option>
-                <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (3.1 Flash)</option>
-                <option value="gemini-3-pro-image-preview">Nano Banana Pro (3.0 Pro)</option>
+                <optgroup label="Économie (Tests & Brouillons)">
+                    <option value="gemini-2.5-flash-image">Nano Banana (2.5 Flash) — (~0.04$)</option>
+                    <option value="imagen-4.0-fast-generate-001">Imagen 4 Fast — (Bas coût)</option>
+                    <option value="gemini-3.1-flash-image-preview" selected>Nano Banana 2 (3.1 Flash) — (~0.07$)</option>
+                </optgroup>
+
+                <optgroup label="Qualité (Rendus Final Boss)">
+                    <option value="imagen-4.0-generate-001">Imagen 4 Standard — (Medium)</option>
+                    <option value="gemini-3-pro-image-preview">Nano Banana Pro (3.0 Pro) — (~0.13$)</option>
+                    <option value="imagen-4.0-ultra-generate-001">Imagen 4 Ultra — (Premium)</option>
+                </optgroup>
+
+                <optgroup label="Vidéos (Veo)">
+                    <option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast (Vidéo Preview)</option>
+                </optgroup>
             </select>
         </div>
         <div class="input-group">
@@ -98,6 +110,21 @@
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">Bibliothèque</div>
+    <details id="refGallery" open>
+        <summary style="border-left: 4px solid #ffcc00;">🖼️ RÉFÉRENCES VISUELLES</summary>
+        <div class="details-content">
+            <div id="selectedRefDisplay" style="margin-bottom:10px; text-align:center; display:none;">
+                <p style="font-size:10px; color:#aaa;">Référence active :</p>
+                <img id="refPreview" src="" style="width:80px; height:80px; object-fit:cover; border:2px solid var(--accent); border-radius:4px;">
+                <button onclick="window.clearReference()" style="display:block; margin:5px auto; font-size:10px; background:none; border:none; color:red; cursor:pointer;">[Retirer]</button>
+            </div>
+            <input type="file" id="localRefInput" style="display:none;" accept="image/*" onchange="window.handleLocalRef(this)">
+            <button class="trigger-btn" onclick="document.getElementById('localRefInput').click()">
+                <strong>+ Upload local</strong>
+                <small>Utiliser une image de ton PC</small>
+            </button>
+            <div id="yamlRefList"></div> </div>
+    </details>
     <div class="sidebar-content" id="sidebarContent"></div>
 </div>
 
@@ -124,12 +151,14 @@
 
     function parseYaml(content) {
         const root = document.getElementById('sidebarContent');
-        if (!root) return;
         root.innerHTML = '';
         const lines = content.split('\n');
         let currentDetails = null, contentDiv = null, catIdx = 0;
-        const regex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
+        // On parse ligne par ligne pour gérer les blocs complexes
+        const items = jsyaml.load(content); // Je te suggère d'ajouter la lib js-yaml pour plus de fiabilité
+
+        // Version simplifiée si tu restes en Regex :
         lines.forEach((line, i) => {
             if (line.trim().startsWith('###')) {
                 currentDetails = document.createElement('details');
@@ -143,16 +172,33 @@
                 catIdx++;
                 return;
             }
-            const match = lines.slice(i, i+10).join('\n').match(regex);
-            if (match && line.trim().startsWith('- trigger:')) {
-                const trig = match[1];
-                const repl = (match[2] || match[3] || "").trim().replace(/\s+/g, ' ');
-                promptDb[trig] = { text: repl, color: colorPalette[(catIdx-1)%6] || '#888' };
-                const btn = document.createElement('button');
-                btn.className = 'trigger-btn';
-                btn.innerHTML = `<strong style="color:${promptDb[trig].color}">${trig}</strong><small>${repl}</small>`;
-                btn.onclick = () => window.insertTag(trig);
-                if (contentDiv) contentDiv.appendChild(btn);
+
+            // Détection d'un bloc trigger (Approche simplifiée)
+            if (line.trim().startsWith('- trigger:')) {
+                const segment = lines.slice(i, i + 5).join('\n');
+                const trigger = segment.match(/trigger:\s*["']?(:[\w-]+)["']?/)?.[1];
+                const replace = segment.match(/replace:\s*["']?([\s\S]*?)["']?(?=\n|$)/)?.[1];
+                const imgPath = segment.match(/image:\s*["']?(.*?)["']?(?=\n|$)/)?.[1];
+
+                if (trigger) {
+                    promptDb[trigger] = { text: replace, color: colorPalette[(catIdx - 1) % 6], image: imgPath };
+                    const btn = document.createElement('button');
+                    btn.className = 'trigger-btn';
+                    
+                    // Si y'a une image, on met un thumbnail
+                    let imgHtml = imgPath ? `<img src="${imgPath}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;">` : '';
+                    
+                    btn.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            ${imgHtml}
+                            <div style="flex:1; overflow:hidden;">
+                                <strong style="color:${promptDb[trigger].color}">${trigger}</strong>
+                                <small>${replace}</small>
+                            </div>
+                        </div>`;
+                    btn.onclick = () => window.insertTag(trigger);
+                    if (contentDiv) contentDiv.appendChild(btn);
+                }
             }
         });
     }
@@ -207,28 +253,61 @@
     // --- GÉNÉRATION BLINDÉE ---
 
 
-async function generateImage() {
+let currentReferenceBase64 = null;
+
+// Gérer l'upload local
+window.handleLocalRef = async (input) => {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentReferenceBase64 = e.target.result.split(',')[1];
+            document.getElementById('refPreview').src = e.target.result;
+            document.getElementById('selectedRefDisplay').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+window.clearReference = () => {
+    currentReferenceBase64 = null;
+    document.getElementById('selectedRefDisplay').style.display = 'none';
+};
+
+// --- FONCTION GÉNÉRER MISE À JOUR ---
+    async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("On a besoin de fuel, Richard ! (Clé + Prompt)");
-        
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Extraction des pixels en cours... 🎨</div>`;
+        if (!key || !prompt) return alert("Clé ou Prompt manquant !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération multimodale... 🚀</div>`;
 
         try {
-            const isImagen = model.includes('imagen');
+            const isImagen = model.includes('imagen') || model.includes('image');
             const method = isImagen ? 'predict' : 'generateContent';
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
 
-            const payload = isImagen ? {
-                instances: [{ prompt: prompt }],
-                parameters: { sampleCount: 1, aspectRatio: ratio }
-            } : {
-                contents: [{ parts: [{ text: prompt }] }]
-            };
+            // Construction du payload avec image de référence si disponible
+            let payload;
+            if (isImagen) {
+                payload = {
+                    instances: [{
+                        prompt: prompt,
+                        // Si on a une image de référence, on l'ajoute
+                        image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined
+                    }],
+                    parameters: { sampleCount: 1, aspectRatio: ratio }
+                };
+            } else {
+                // Mode Gemini Multimodal
+                const parts = [{ text: prompt }];
+                if (currentReferenceBase64) {
+                    parts.push({ inline_data: { mime_type: "image/png", data: currentReferenceBase64 } });
+                }
+                payload = { contents: [{ parts: parts }] };
+            }
 
             const res = await fetch(url, {
                 method: 'POST',
@@ -237,40 +316,35 @@ async function generateImage() {
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+            if (!res.ok) throw new Error(data.error?.message || "Erreur API");
 
-            // --- LA LOGIQUE DE DÉTECTION BLINDÉE ---
-            // On vérifie toutes les variantes de noms possibles de Google
-            const b64 = data.predictions?.[0]?.bytesBase64Encoded || // Ce que ta capture d'écran montre !
+            const b64 = data.predictions?.[0]?.bytesBase64Encoded || 
                         data.predictions?.[0]?.bytesBase64 || 
                         data.generatedImages?.[0]?.image?.imageBytes;
 
             if (b64) {
-                // On récupère aussi le mimeType si présent, sinon on assume jpeg
-                const mime = data.predictions?.[0]?.mimeType || "image/png";
-                
-                area.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
-                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.4);">
-                        <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:${mime};base64,${b64}" download="lotus-render.png" style="background:#444; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
-                        </div>
-                    </div>`;
+                area.innerHTML = `<img src="data:image/png;base64,${b64}" style="max-width:100%; max-height:100%; border-radius:8px;">`;
             } else {
-                // Fallback si c'est du texte
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Réponse reçue, mais format de pixels inconnu. Vérifie la console.";
-                console.log("Structure reçue :", data); // Pour débugger si ça arrive encore
-                area.innerHTML = `<div style="color:#aaa; font-size:13px; text-align:left; padding:20px; overflow:auto; height:100%; white-space:pre-wrap; background:#0a0a0a; border-radius:8px;">${aiText}</div>`;
+                area.innerHTML = `<div style="color:#aaa;padding:20px;">Image générée, mais format non reconnu.</div>`;
             }
-
         } catch (e) {
-            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                <h3 style="margin-top:0">❌ Échec du Render</h3>
-                <pre style="white-space:pre-wrap;">${e.message}</pre>
-            </div>`;
+            area.innerHTML = `<div style="color:red;padding:15px;background:#2b0000;font-size:11px;">${e.message}</div>`;
         }
     }
+
+// Fonction utilitaire pour convertir tes fichiers locaux en Base64
+async function getBase64FromUrl(url) {
+    const data = await fetch(url);
+    const blob = await data.blob();
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            const base64data = reader.result.split(',')[1];
+            resolve(base64data);
+        };
+    });
+}
 
 
      
