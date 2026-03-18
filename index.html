@@ -110,13 +110,13 @@
     let lastRenderedVars = "";
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- LOGIQUE DE BASE (YAML & UI) ---
+    // --- LOGIQUE YAML & UI ---
     async function loadYaml(fileName = 'default.yml') {
         const root = document.getElementById('sidebarContent');
         if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Sync... 🔄</p>';
         try {
             const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!res.ok) throw new Error(`404: ${fileName}`);
+            if (!res.ok) throw new Error(`Fichier introuvable (${res.status})`);
             const text = await res.text();
             parseYaml(text);
         } catch (e) {
@@ -126,6 +126,7 @@
 
     function parseYaml(content) {
         const root = document.getElementById('sidebarContent');
+        if (!root) return;
         root.innerHTML = '';
         const lines = content.split('\n');
         let currentDetails = null, contentDiv = null, catIdx = 0;
@@ -161,6 +162,7 @@
     function processPrompt() {
         const text = document.getElementById('promptResume').value;
         const layer = document.getElementById('highlightLayer');
+        if(!layer) return;
         
         layer.innerHTML = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;border-radius:2px;color:${promptDb[m].color}">${m}</span>` : m)
@@ -181,7 +183,8 @@
         vFound.forEach(v => {
             final = final.replace(new RegExp(`{{${v}}}`, 'g'), currentVariables[v] || `[${v}]`);
         });
-        document.getElementById('promptComplet').value = final;
+        const out = document.getElementById('promptComplet');
+        if (out) out.value = final;
     }
 
     function renderVars(vSet) {
@@ -190,105 +193,96 @@
         lastRenderedVars = sig;
         const cont = document.getElementById('variablesContainer');
         const list = document.getElementById('variablesList');
-        if (vSet.size === 0) { if(cont) cont.style.display = 'none'; return; }
-        if(cont) cont.style.display = 'flex';
-        if(list) {
-            list.innerHTML = '';
-            vSet.forEach(v => {
-                if (currentVariables[v] === undefined) currentVariables[v] = '';
-                const d = document.createElement('div');
-                d.className = 'var-row';
-                d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
-                list.appendChild(d);
-            });
-        }
+        if (!cont || !list) return;
+        if (vSet.size === 0) { cont.style.display = 'none'; return; }
+        cont.style.display = 'flex';
+        list.innerHTML = '';
+        vSet.forEach(v => {
+            if (currentVariables[v] === undefined) currentVariables[v] = '';
+            const d = document.createElement('div');
+            d.className = 'var-row';
+            d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
+            list.appendChild(d);
+        });
     }
 
-    // --- API GÉNÉRATION (HYBRIDE TEXTE / IMAGE) ---
-async function generateImage() {
+    // --- GÉNÉRATION BLINDÉE ---
+    async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Richard, ça prend du jus pour faire rouler le Lotus de Fer (Clé + Prompt) !");
-        
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération avec ${model}... 🎨</div>`;
+        if (!key || !prompt) return alert("Richard, ça prend du gaz (Clé + Prompt) !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Appel API Direct (${model})... 🚀</div>`;
 
         try {
-            // Détection du mode (Image vs Texte)
-            const isImageModel = model.toLowerCase().includes('image') || model.toLowerCase().includes('imagen');
-            const method = isImageModel ? 'generateImages' : 'generateContent';
-            
-            // On force le v1beta pour les previews
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
-
-            const payload = isImageModel ? {
-                instances: [{ prompt: prompt }],
-                parameters: { 
-                    sampleCount: 1, 
-                    aspectRatio: ratio,
-                    outputMimeType: "image/jpeg" 
-                }
-            } : {
-                contents: [{ parts: [{ text: prompt }] }]
-            };
+            // TEST : On tente l'endpoint v1 au lieu de v1beta pour le 3.1
+            const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateImages?key=${key}`;
 
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ 
+                    instances: [{ prompt: prompt }], 
+                    parameters: { sampleCount: 1, aspectRatio: ratio, outputMimeType: "image/jpeg" } 
+                })
             });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
-
-            // Extraction des pixels (Base64)
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes || 
-                        data.predictions?.[0]?.bytesBase64;
-
-            if (b64) {
-                // LE MOMENT DE GLOIRE !
-                area.innerHTML = `
-                    <div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; gap:10px;">
-                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border);">
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:image/jpeg;base64,${b64}" download="lotus-de-fer-render.jpg" style="background:#444; color:white; padding:12px 20px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:14px;">Télécharger 💾</a>
-                        </div>
-                    </div>`;
-            } else if (!isImageModel) {
-                // Rendu texte si tu as choisi Gemini Flash
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de réponse texte.";
-                area.innerHTML = `<div style="color:#aaa; font-size:13px; text-align:left; padding:20px; overflow:auto; height:100%; background:#0a0a0a; border-radius:8px; white-space:pre-wrap;">${aiText}</div>`;
-            } else {
-                throw new Error("L'API a répondu 200 OK, mais n'a pas renvoyé de Base64.");
+            // On lit d'abord le texte brut pour éviter le crash JSON
+            const rawResponse = await res.text();
+            let data = {};
+            
+            try {
+                if (rawResponse) data = JSON.parse(rawResponse);
+            } catch (e) {
+                throw new Error(`Le serveur a répondu avec du texte non-JSON (possible erreur 404 HTML).\n\nRéponse brute :\n${rawResponse.substring(0, 500)}`);
             }
 
-        } catch (error) {
-            console.error("Erreur complète:", error);
-            area.innerHTML = `
-                <div style="color:#ff4d4d; font-size:12px; padding:20px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%;">
-                    <h3 style="margin-top:0;">❌ Erreur lors de la génération</h3>
-                    <pre style="white-space:pre-wrap; font-family:monospace;">${error.message}</pre>
-                    <p style="margin-top:10px; color:#888;">Note: Si tu as un 404, vérifie que le nom du modèle est bien <b>${model}</b>.</p>
-                </div>
-                <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
+            if (!res.ok) {
+                throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
+            }
+
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
+            
+            if (b64) {
+                area.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
+                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#444; color:white; padding:10px 15px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                        </div>
+                    </div>`;
+            } else {
+                throw new Error("200 OK, mais le champ image est vide dans le JSON.");
+            }
+
+        } catch (e) {
+            console.error("DEBUG IT :", e);
+            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
+                <h3 style="margin-top:0">❌ Erreur API / Réseau</h3>
+                <pre style="white-space:pre-wrap; font-family:monospace;">${e.message}</pre>
+                <p style="font-size:10px; color:#aaa; margin-top:10px;">Vérifie ton extension <b>CORS</b> et le nom du modèle.</p>
+            </div>
+            <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
         }
     }
 
     // --- EXPORTS & INIT ---
     window.insertTag = (t) => {
         const a = document.getElementById('promptResume');
-        a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
-        processPrompt();
+        if(a) {
+            a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
+            processPrompt();
+        }
     };
     window.processPrompt = processPrompt;
     window.updateVar = (n, v) => { currentVariables[n] = v; processPrompt(); };
     window.copyPrompt = () => {
         const c = document.getElementById('promptComplet');
-        c.select(); document.execCommand('copy'); alert("Copié !");
+        if(c) { c.select(); document.execCommand('copy'); alert("Copié !"); }
     };
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
     window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
@@ -296,16 +290,21 @@ async function generateImage() {
     window.generateImage = generateImage;
     window.checkModels = async () => {
         const k = document.getElementById('apiKey').value;
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
-        const d = await r.json();
-        console.log("Modèles dispos:", d.models);
-        alert("Check la console F12");
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
+            const d = await r.json();
+            console.log("Modèles dispos:", d.models);
+            alert("Liste reçue. Regarde la console (F12).");
+        } catch(e) { alert("Erreur scan: " + e.message); }
     };
 
     window.onload = () => {
         loadYaml();
         const k = localStorage.getItem('gemini_api_key');
-        if (k) document.getElementById('apiKey').value = k;
+        if (k) {
+            const input = document.getElementById('apiKey');
+            if(input) input.value = k;
+        }
         const pr = document.getElementById('promptResume');
         const hl = document.getElementById('highlightLayer');
         if(pr && hl) pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
