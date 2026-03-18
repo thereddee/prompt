@@ -2,222 +2,334 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Lotus de Fer - Prompt Editor</title>
+    <title>Lotus de Fer - Studio de Génération</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 15px; padding-bottom: 250px; }
-        .container { max-width: 1000px; margin: auto; }
-        
-        h1 { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .status { font-size: 0.4em; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; }
-        .status.online { background: #2ecc71; color: #fff; }
-        .status.error { background: #e74c3c; color: #fff; }
+        :root {
+            --bg-main: #121212;
+            --bg-panel: #1e1e1e;
+            --border: #333;
+            --accent: #00d4ff;
+            --accent-hover: #00a3cc;
+            --text: #e0e0e0;
+            --tag-color: #ff4d4d;
+        }
 
-        .config-bar { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; display: flex; align-items: center; gap: 10px; }
-        .config-bar input { background: #111; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 4px; flex-grow: 1; font-family: monospace; }
-        .btn-load { background: #ffcc00; color: #000; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-main); color: var(--text); margin: 0; height: 100vh; display: flex; overflow: hidden; }
 
-        h2 { color: #00d4ff; border-left: 4px solid #00d4ff; padding-left: 15px; margin-top: 40px; text-transform: uppercase; font-size: 1.1em; }
-        
-        .section { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 15px; }
-        
-        .item { background: #2d2d2d; padding: 15px; border-radius: 6px; cursor: pointer; border: 1px solid #444; transition: 0.2s; position: relative; display: flex; flex-direction: column; }
-        .item:hover { border-color: #00d4ff; background: #363636; }
-        .item input { position: absolute; right: 15px; top: 15px; scale: 1.5; cursor: pointer; }
-        
-        .trigger-label { color: #ffcc00; font-weight: bold; display: block; margin-bottom: 6px; font-family: monospace; font-size: 1.1em; }
-        .preview-text { color: #aaa; font-size: 0.85em; line-height: 1.3; display: block; padding-right: 25px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* --- LAYOUT PRINCIPAL --- */
+        .workspace { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 20px; }
+        .sidebar { width: 350px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s ease, width 0.3s ease; }
+        .sidebar.collapsed { width: 0; border: none; transform: translateX(100%); }
 
-        #output-container { position: fixed; bottom: 0; left: 0; right: 0; background: #222; padding: 20px; border-top: 3px solid #00d4ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.7); z-index: 100; }
-        .output-wrapper { max-width: 1000px; margin: auto; }
+        /* --- HEADER & CONFIG (Gauche) --- */
+        .top-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .input-group { display: flex; flex-direction: column; flex: 1; gap: 5px; }
+        .input-group label { font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .input-group input, .input-group select { background: #111; color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-family: monospace; }
+        .btn-toggle-sidebar { background: var(--accent); color: #000; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* --- ÉDITEURS DE PROMPT --- */
+        .section-title { color: var(--accent); margin: 0 0 10px 0; font-size: 1.1em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Style pour la zone des fichiers requis */
-        #requiredFilesList { display: none; background: #332b00; color: #ffcc00; padding: 10px 15px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #ffcc00; font-size: 0.95em; }
+        /* Conteneur magique pour le highlight du résumé */
+        .editor-container { position: relative; width: 100%; height: 120px; background: #111; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+        .highlight-layer, #promptResume { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 12px; font-family: monospace; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+        .highlight-layer { color: transparent; z-index: 1; pointer-events: none; }
+        #promptResume { background: transparent; color: var(--text); border: none; z-index: 2; resize: none; outline: none; caret-color: white; }
+        .tag-highlight { border-radius: 3px; padding: 0 2px; font-weight: bold; }
+
+        #promptComplet { width: 100%; height: 150px; background: #0a0a0a; color: #aaa; border: 1px solid var(--border); padding: 12px; font-family: monospace; border-radius: 4px; resize: none; line-height: 1.4; }
+
+        /* --- VARIABLES --- */
+        #variablesContainer { display: flex; flex-direction: column; gap: 10px; background: #2a2510; border: 1px solid #665200; padding: 15px; border-radius: 4px; display: none; }
+        .var-row { display: flex; align-items: center; gap: 10px; }
+        .var-row label { font-family: monospace; color: #ffcc00; font-weight: bold; width: 120px; }
+        .var-row input { flex: 1; background: #111; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
+
+        /* --- RÉSULTAT (Image Placeholder) --- */
+        .result-area { flex: 1; border: 2px dashed var(--border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #0a0a0a; min-height: 200px; position: relative; }
+        .result-placeholder { color: #555; font-size: 1.2em; text-transform: uppercase; letter-spacing: 2px; }
+        .btn-generate { position: absolute; bottom: 20px; right: 20px; background: var(--tag-color); color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 1.1em; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 77, 77, 0.3); }
+
+        /* --- SIDEBAR (Droite) --- */
+        .sidebar-header { padding: 15px; background: #111; border-bottom: 1px solid var(--border); font-weight: bold; text-transform: uppercase; color: var(--accent); }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 10px; }
         
-        textarea { width: 100%; height: 100px; background: #111; color: #00ffcc; border: 1px solid #444; padding: 12px; font-family: monospace; resize: none; border-radius: 4px; box-sizing: border-box; line-height: 1.4; }
+        details { margin-bottom: 10px; background: #252525; border-radius: 4px; border: 1px solid var(--border); }
+        details summary { padding: 12px; font-weight: bold; cursor: pointer; outline: none; user-select: none; color: #ddd; }
+        details summary:hover { background: #2a2a2a; }
+        .details-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
         
-        .controls { display: flex; gap: 10px; margin-top: 10px; }
-        .btn { flex: 1; padding: 12px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
-        .btn-copy { background: #00d4ff; color: #000; }
-        .btn-clear { background: #444; color: #fff; }
-        .btn:active { transform: scale(0.98); }
-        
-        .error-box { background: #331414; border: 2px dashed #ff4d4d; padding: 20px; border-radius: 8px; margin-top: 20px; }
-        .error-box h2 { color: #ff4d4d; margin-top: 0; border: none; padding: 0; }
-        .error-box h3 { color: #ffcc00; margin-top: 20px; }
+        .trigger-btn { background: #1a1a1a; border: 1px solid #444; color: var(--text); padding: 10px; border-radius: 4px; text-align: left; cursor: pointer; font-family: monospace; transition: 0.2s; display: flex; flex-direction: column; gap: 4px; }
+        .trigger-btn:hover { border-color: var(--accent); background: #222; }
+        .trigger-btn strong { color: var(--accent); font-size: 1.1em; }
+        .trigger-btn small { color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>
-        Lotus de Fer 
-        <span id="loadStatus" class="status">Sync...</span>
-    </h1>
-
-    <div class="config-bar">
-        <span>Fichier YAML :</span>
-        <input type="text" id="fileNameInput" value="default.yml" placeholder="nom-du-fichier.yml">
-        <button class="btn-load" onclick="manualLoad()">Charger</button>
-    </div>
+<div class="workspace">
     
-    <div id="dynamic-content">
+    <div class="top-bar">
+        <div class="input-group">
+            <label>Fichier YAML</label>
+            <input type="text" id="ymlPath" value="default.yml" onchange="loadYaml()">
         </div>
+        <div class="input-group">
+            <label>Modèle IA</label>
+            <select id="modelSelect">
+                <option value="midjourney">Midjourney v6</option>
+                <option value="dalle3">DALL-E 3</option>
+                <option value="stable">Stable Diffusion XL</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Clé API (Temporaire)</label>
+            <input type="password" id="apiKey" placeholder="sk-...">
+        </div>
+        <button class="btn-toggle-sidebar" onclick="toggleSidebar()">☰ Menu</button>
+    </div>
+
+    <div>
+        <h3 class="section-title">Prompt Résumé</h3>
+        <div class="editor-container">
+            <div id="highlightLayer" class="highlight-layer"></div>
+            <textarea id="promptResume" placeholder="Clique sur les tags à droite ou tape tes propres instructions ici..." oninput="processPrompt()"></textarea>
+        </div>
+    </div>
+
+    <div id="variablesContainer">
+        <h3 class="section-title" style="color: #ffcc00; margin: 0;">Paramètres Requis</h3>
+        <div id="variablesList"></div>
+    </div>
+
+    <div>
+        <h3 class="section-title">Prompt Complet (Généré)</h3>
+        <textarea id="promptComplet" readonly placeholder="Le texte final traduit avec les variables s'affichera ici..."></textarea>
+    </div>
+
+    <div class="result-area">
+        <div class="result-placeholder">Zone de Rendu Image</div>
+        <button class="btn-generate" onclick="alert('Bientôt connecté à l\'API !')">Générer l'image ✨</button>
+    </div>
+
 </div>
 
-<div id="output-container">
-    <div class="output-wrapper">
-        <div id="requiredFilesList"></div>
-        
-        <textarea id="promptOutput" readonly placeholder="Coche des éléments pour bâtir ton prompt..."></textarea>
-        <div class="controls">
-            <button class="btn btn-clear" onclick="clearAll()">Effacer</button>
-            <button class="btn btn-copy" onclick="copyPrompt()">Copier le prompt</button>
-        </div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">Bibliothèque de Prompts</div>
+    <div class="sidebar-content" id="sidebarContent">
+        <p style="color: #666; text-align: center; margin-top: 20px;">Chargement du YAML...</p>
     </div>
 </div>
 
 <script>
-    async function loadYaml(fileName) {
-        const statusEl = document.getElementById('loadStatus');
-        statusEl.textContent = "Sync...";
-        statusEl.className = "status";
+    let promptDb = {}; // Dictionnaire global : { ":trigger": "replace text" }
+    let currentVariables = {}; // Stocke les valeurs tapées par l'utilisateur
+    const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933']; // Couleurs pour les tags
+
+    // --- CHARGEMENT DU FICHIER YML ---
+    async function loadYaml() {
+        const fileName = document.getElementById('ymlPath').value.trim();
+        const sidebarContent = document.getElementById('sidebarContent');
+        sidebarContent.innerHTML = '<p style="color: #888; text-align: center;">Sync en cours...</p>';
+        promptDb = {};
 
         try {
             const response = await fetch(`${fileName}?t=${new Date().getTime()}`);
             if (!response.ok) throw new Error();
             const content = await response.text();
-            renderContent(content);
-            statusEl.textContent = "Connecté : " + fileName;
-            statusEl.className = "status online";
+            parseAndBuildSidebar(content);
+            processPrompt(); // Met à jour s'il y avait déjà du texte
         } catch (err) {
-            statusEl.textContent = "Erreur : " + fileName;
-            statusEl.className = "status error";
-            document.getElementById('dynamic-content').innerHTML = `
-                <div class="error-box">
-                    <h2>⚠️ Oups ! Fichier introuvable</h2>
-                    <p>Le script ne trouve pas le fichier <strong>${fileName}</strong>.</p>
-                </div>
-            `;
+            sidebarContent.innerHTML = `<p style="color: #ff4d4d; padding: 15px;">Erreur: Impossible de lire ${fileName}. Assure-toi qu'il est dans le même dossier.</p>`;
         }
     }
 
-    function manualLoad() {
-        const fileName = document.getElementById('fileNameInput').value.trim();
-        if (fileName) {
-            clearAll();
-            loadYaml(fileName);
-        }
-    }
-
-    function renderContent(content) {
-        const root = document.getElementById('dynamic-content');
+    // --- PARSING ET CRÉATION DE LA SIDEBAR ---
+    function parseAndBuildSidebar(content) {
+        const root = document.getElementById('sidebarContent');
         root.innerHTML = '';
-
         const lines = content.split('\n');
-        let currentWrapper = null;
+        
+        let currentDetails = null;
+        let contentDiv = null;
+        let categoryIndex = 0; // Pour assigner une couleur par catégorie
+
         const matchRegex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
         lines.forEach((line, index) => {
+            // Création des catégories (Accordéons)
             if (line.trim().startsWith('###')) {
                 const categoryName = line.replace('###', '').trim();
-                const h2 = document.createElement('h2');
-                h2.textContent = categoryName;
-                root.appendChild(h2);
                 
-                currentWrapper = document.createElement('div');
-                currentWrapper.className = 'section';
-                root.appendChild(currentWrapper);
+                currentDetails = document.createElement('details');
+                currentDetails.open = true; // Ouvert par défaut
+                
+                const summary = document.createElement('summary');
+                summary.textContent = categoryName;
+                summary.style.borderLeft = `4px solid ${colorPalette[categoryIndex % colorPalette.length]}`;
+                
+                contentDiv = document.createElement('div');
+                contentDiv.className = 'details-content';
+
+                currentDetails.appendChild(summary);
+                currentDetails.appendChild(contentDiv);
+                root.appendChild(currentDetails);
+                
+                categoryIndex++;
                 return;
             }
 
-            if (!currentWrapper) {
-                currentWrapper = document.createElement('div');
-                currentWrapper.className = 'section';
-                root.appendChild(currentWrapper);
+            // Fallback s'il n'y a pas de catégorie au début du fichier
+            if (!currentDetails) {
+                currentDetails = document.createElement('details');
+                currentDetails.open = true;
+                const summary = document.createElement('summary');
+                summary.textContent = "Général";
+                contentDiv = document.createElement('div');
+                contentDiv.className = 'details-content';
+                currentDetails.appendChild(summary);
+                currentDetails.appendChild(contentDiv);
+                root.appendChild(currentDetails);
             }
 
+            // Extraction des triggers
             const segment = lines.slice(index, index + 10).join('\n');
             const match = segment.match(matchRegex);
 
             if (match && line.trim().startsWith('- trigger:')) {
                 const trigger = match[1];
-                let replace = (match[2] || match[3] || "").trim();
+                let replace = (match[2] || match[3] || "").trim().replace(/\s+/g, ' ');
+                
                 if ([':espanso', ':txt', ':date', ':shell'].includes(trigger)) return;
 
-                const div = document.createElement('div');
-                div.className = 'item';
-                div.onclick = (e) => {
-                    if(e.target.tagName !== 'INPUT') {
-                        const cb = div.querySelector('input');
-                        cb.checked = !cb.checked;
-                        updatePrompt();
-                    }
-                };
-                div.innerHTML = `
-                    <span class="trigger-label">${trigger}</span>
-                    <span class="preview-text">${replace}</span>
-                    <input type="checkbox" value="${replace}" onchange="updatePrompt()">
-                `;
-                currentWrapper.appendChild(div);
+                // Sauvegarde dans la base de données JS
+                promptDb[trigger] = { text: replace, color: colorPalette[(categoryIndex - 1) % colorPalette.length] };
+
+                // Création du bouton
+                const btn = document.createElement('button');
+                btn.className = 'trigger-btn';
+                btn.innerHTML = `<strong style="color: ${promptDb[trigger].color}">${trigger}</strong><small>${replace}</small>`;
+                btn.onclick = () => insertTag(trigger);
+                
+                contentDiv.appendChild(btn);
             }
         });
     }
 
-    function updatePrompt() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        let promptParts = [];
-        let requiredFiles = new Set();
+    // --- GESTION DE L'ÉDITEUR ---
+    function insertTag(trigger) {
+        const textarea = document.getElementById('promptResume');
+        // Ajoute le tag avec un espace
+        textarea.value = textarea.value + (textarea.value.endsWith(' ') || textarea.value === '' ? '' : ' ') + trigger + ' ';
+        textarea.focus();
+        processPrompt();
+    }
+
+    function processPrompt() {
+        const textarea = document.getElementById('promptResume');
+        const highlightLayer = document.getElementById('highlightLayer');
+        const rawText = textarea.value;
+
+        // 1. Mise à jour de la surbrillance visuelle (Highlighting)
+        // On remplace le texte pour le layer arrière. Les tags reconnus deviennent colorés.
+        let highlightedHTML = rawText
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') // Échapper le HTML
+            .replace(/(:\w[\w-]*)/g, (match) => {
+                if (promptDb[match]) {
+                    // Appliquer la couleur de la catégorie
+                    return `<span class="tag-highlight" style="background-color: ${promptDb[match].color}40; color: ${promptDb[match].color};">${match}</span>`;
+                }
+                return match;
+            });
         
-        // Regex pour trouver les noms de fichiers (.png, .jpg, .jpeg)
-        const fileRegex = /[a-zA-Z0-9_-]+\.(png|jpg|jpeg)/gi;
-        // Regex pour enlever les instructions entre crochets ex: [Use ks.a.jpg for...]
-        const instructionRegex = /\[Use.*?\]\s*/gi;
+        // Pour que les retours à la ligne soient bien calqués
+        highlightLayer.innerHTML = highlightedHTML.replace(/\n/g, '<br>') + '<br>';
 
-        checkboxes.forEach(cb => {
-            let text = cb.value;
-            
-            // 1. Chercher s'il y a des fichiers requis dans le texte
-            let filesFound = text.match(fileRegex);
-            if (filesFound) {
-                filesFound.forEach(file => requiredFiles.add(file));
+        // 2. Traduction pour le "Prompt Complet"
+        let fullPrompt = rawText;
+        const foundTags = rawText.match(/(:\w[\w-]*)/g) || [];
+        
+        foundTags.forEach(tag => {
+            if (promptDb[tag]) {
+                // Nettoyage des balises [Use ...] s'il y en a
+                let cleanReplace = promptDb[tag].text.replace(/\[Use.*?\]\s*/gi, '').trim();
+                fullPrompt = fullPrompt.replace(tag, cleanReplace);
             }
-            
-            // 2. Nettoyer le texte pour le prompt final (enlève le "[Use xyz.jpg...]")
-            let cleanText = text.replace(instructionRegex, '').trim();
-            promptParts.push(cleanText);
         });
 
-        // Mise à jour de la zone de texte du prompt
-        document.getElementById('promptOutput').value = promptParts.join('\n\n');
+        // 3. Gestion des variables {{...}}
+        extractAndRenderVariables(fullPrompt);
+        
+        // Applique les valeurs actuelles des variables au texte final
+        let finalOutput = fullPrompt;
+        Object.keys(currentVariables).forEach(varName => {
+            const val = currentVariables[varName] || `[${varName}]`;
+            finalOutput = finalOutput.replace(new RegExp(`{{${varName}}}`, 'g'), val);
+        });
 
-        // Mise à jour de la bannière des fichiers requis
-        const filesContainer = document.getElementById('requiredFilesList');
-        if (requiredFiles.size > 0) {
-            filesContainer.innerHTML = "📸 <strong>Fichiers à uploader :</strong> " + Array.from(requiredFiles).join(', ');
-            filesContainer.style.display = "block";
-        } else {
-            filesContainer.style.display = "none";
-            filesContainer.innerHTML = "";
+        document.getElementById('promptComplet').value = finalOutput;
+    }
+
+    // --- GESTION DES VARIABLES ---
+    function extractAndRenderVariables(text) {
+        const regex = /{{(.*?)}}/g;
+        let varsFound = new Set();
+        let match;
+        
+        while ((match = regex.exec(text)) !== null) {
+            varsFound.add(match[1]);
         }
+
+        const container = document.getElementById('variablesContainer');
+        const listDiv = document.getElementById('variablesList');
+        
+        if (varsFound.size === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+        listDiv.innerHTML = ''; // Reset
+
+        varsFound.forEach(varName => {
+            const row = document.createElement('div');
+            row.className = 'var-row';
+            
+            // Si la variable n'existe pas encore dans notre state, on la crée
+            if (currentVariables[varName] === undefined) {
+                currentVariables[varName] = '';
+            }
+
+            row.innerHTML = `
+                <label>${varName}</label>
+                <input type="text" placeholder="Entrez la valeur..." value="${currentVariables[varName]}" oninput="updateVar('${varName}', this.value)">
+            `;
+            listDiv.appendChild(row);
+        });
     }
 
-    function copyPrompt() {
-        const text = document.getElementById('promptOutput');
-        if (!text.value) return;
-        text.select();
-        document.execCommand('copy');
-        const btn = document.querySelector('.btn-copy');
-        btn.textContent = "Copié !";
-        setTimeout(() => btn.textContent = "Copier le prompt", 2000);
+    function updateVar(name, value) {
+        currentVariables[name] = value;
+        processPrompt(); // Retraduit le prompt complet en temps réel
     }
 
-    function clearAll() {
-        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        updatePrompt();
+    // --- UI UTILS ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
     }
 
-    window.onload = () => loadYaml('default.yml');
+    // Pour synchroniser le scroll de la zone de texte et du highlight
+    document.getElementById('promptResume').addEventListener('scroll', function() {
+        document.getElementById('highlightLayer').scrollTop = this.scrollTop;
+    });
+
+    // Initialisation
+    window.onload = loadYaml;
+
 </script>
-
 </body>
 </html>
