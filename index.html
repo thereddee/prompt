@@ -73,7 +73,7 @@
         .trigger-btn:hover { border-color: var(--accent); background: #222; }
         .trigger-btn strong { color: var(--accent); font-size: 1.1em; }
         .trigger-btn small { color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } })
     </style>
 </head>
 <body>
@@ -88,13 +88,21 @@
         <div class="input-group">
             <label>Modèle IA</label>
             <select id="modelSelect">
-                <option value="midjourney">Midjourney v6</option>
-                <option value="dalle3">DALL-E 3</option>
-                <option value="stable">Stable Diffusion XL</option>
+                <option value="nanobanana">Nano Banana 2</option>
             </select>
         </div>
         <div class="input-group">
-            <label>Clé API (Temporaire)</label>
+            <label>Format (Ratio)</label>
+            <select id="aspectRatioSelect">
+                <option value="1:1">Carré (1:1)</option>
+                <option value="16:9">Paysage BD (16:9)</option>
+                <option value="9:16">Mobile/Vertical (9:16)</option>
+                <option value="4:3">Classique (4:3)</option>
+                <option value="3:4">Portrait Perso (3:4)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Clé API</label>
             <input type="password" id="apiKey" placeholder="sk-...">
         </div>
         <button class="btn-toggle-sidebar" onclick="toggleSidebar()">☰ Menu</button>
@@ -120,7 +128,7 @@
 
     <div class="result-area">
         <div class="result-placeholder">Zone de Rendu Image</div>
-        <button class="btn-generate" onclick="alert('Bientôt connecté à l\'API !')">Générer l'image ✨</button>
+        <button class="btn-generate" onclick="generateImage()">Générer l'image ✨</button>
     </div>
 
 </div>
@@ -174,7 +182,7 @@
                 const categoryName = line.replace('###', '').trim();
                 
                 currentDetails = document.createElement('details');
-                currentDetails.open = true; // Ouvert par défaut
+                currentDetails.open = false; // Ouvert par défaut
                 
                 const summary = document.createElement('summary');
                 summary.textContent = categoryName;
@@ -349,6 +357,78 @@ function processPrompt() {
     document.getElementById('promptResume').addEventListener('scroll', function() {
         document.getElementById('highlightLayer').scrollTop = this.scrollTop;
     });
+
+    // --- CONNEXION API NANO BANANA 2 (Gemini 3 Flash Image) ---
+    async function generateImage() {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const promptText = document.getElementById('promptComplet').value.trim();
+        const selectedRatio = document.getElementById('aspectRatioSelect').value; // On récupère le ratio
+        const resultArea = document.querySelector('.result-area');
+
+        // Validation de base
+        if (!apiKey) {
+            alert("Ouin, ça va te prendre ta clé API dans le champ en haut pour que ça marche !");
+            return;
+        }
+        if (!promptText) {
+            alert("Ton prompt est vide. Coche des tags ou écris tes instructions d'abord.");
+            return;
+        }
+
+        // On met à jour le UI pour montrer que ça travaille
+        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Génération avec Nano Banana 2 en cours... ⏳</div>`;
+
+        try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    instances: [
+                        { prompt: promptText }
+                    ],
+                    parameters: {
+                        sampleCount: 1, 
+                        aspectRatio: selectedRatio // La variable est injectée ici !
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || `Erreur HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // L'API Gemini retourne généralement l'image encodée en Base64
+            // On extrait la chaîne Base64 (le chemin JSON exact peut varier selon ta version d'API)
+            const base64Image = data.predictions?.[0]?.bytesBase64 || data.generatedImages?.[0]?.image?.imageBytes;
+
+            if (base64Image) {
+                // On affiche l'image directement dans ton interface web
+                resultArea.innerHTML = `
+                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);" alt="Rendu Lotus de Fer">
+                    <button class="btn-generate" onclick="generateImage()">Regénérer ✨</button>
+                `;
+            } else {
+                throw new Error("L'API a répondu, mais le format de l'image n'est pas celui attendu.");
+            }
+
+        } catch (error) {
+            console.error("Erreur de génération :", error);
+            resultArea.innerHTML = `
+                <div class="result-placeholder" style="color: #ff4d4d; font-size: 1em; text-align: center; line-height: 1.5;">
+                    ❌ Oups, la requête a planté.<br>
+                    <small style="color: #aaa;">${error.message}</small>
+                </div>
+                <button class="btn-generate" onclick="generateImage()">Réessayer ✨</button>
+            `;
+        }
+    }
 
     // Initialisation
     window.onload = loadYaml;
