@@ -106,6 +106,8 @@
         <button class="btn-generate" onclick="window.generateImage()">Générer ✨</button>
     </div>
     
+    <button class="btn-menu" style="background:var(--accent); color:#000; font-weight:bold;" onclick="window.generateImage()">Générer ✨</button>
+
     <button onclick="window.checkModels()" style="background:#333; color:#888; border:none; padding:5px; font-size:10px; cursor:pointer;">Debug: Lister Modèles</button>
 </div>
 
@@ -150,58 +152,75 @@
         }
     }
 
+    // --- Refactorer YAML parsing avec js-yaml ---
     function parseYaml(content) {
         const root = document.getElementById('sidebarContent');
         root.innerHTML = '';
-        const lines = content.split('\n');
-        let currentDetails = null, contentDiv = null, catIdx = 0;
+        
+        // On efface les données précédentes
+        promptDb = {};
 
-        // On parse ligne par ligne pour gérer les blocs complexes
-        const items = jsyaml.load(content); // Je te suggère d'ajouter la lib js-yaml pour plus de fiabilité
-
-        // Version simplifiée si tu restes en Regex :
-        lines.forEach((line, i) => {
-            if (line.trim().startsWith('###')) {
-                currentDetails = document.createElement('details');
+        try {
+            // On utilise jsyaml pour parser tout le bloc de texte
+            const data = jsyaml.load(content);
+            
+            let catIdx = 0;
+            
+            // data est maintenant un objet structuré. Exemple: { category: [ {trigger: "", replace: ""}, ... ] }
+            for (const category in data) {
+                // Création de l'élément d'accordéon pour la catégorie
+                const currentDetails = document.createElement('details');
                 const summary = document.createElement('summary');
-                summary.textContent = line.replace('###', '').trim();
+                summary.textContent = category;
                 summary.style.borderLeft = `4px solid ${colorPalette[catIdx % 6]}`;
-                contentDiv = document.createElement('div');
+                const contentDiv = document.createElement('div');
                 contentDiv.className = 'details-content';
                 currentDetails.append(summary, contentDiv);
                 root.appendChild(currentDetails);
-                catIdx++;
-                return;
-            }
-
-            // Détection d'un bloc trigger (Approche simplifiée)
-            if (line.trim().startsWith('- trigger:')) {
-                const segment = lines.slice(i, i + 5).join('\n');
-                const trigger = segment.match(/trigger:\s*["']?(:[\w-]+)["']?/)?.[1];
-                const replace = segment.match(/replace:\s*["']?([\s\S]*?)["']?(?=\n|$)/)?.[1];
-                const imgPath = segment.match(/image:\s*["']?(.*?)["']?(?=\n|$)/)?.[1];
-
-                if (trigger) {
-                    promptDb[trigger] = { text: replace, color: colorPalette[(catIdx - 1) % 6], image: imgPath };
-                    const btn = document.createElement('button');
-                    btn.className = 'trigger-btn';
+                
+                // Itération sur les triggers à l'intérieur de cette catégorie
+                data[category].forEach(item => {
+                    const trigger = item.trigger;
+                    const replace = item.replace;
+                    const imgPath = item.image; // Nouvelle propriété 'image' pour tes character sheets !
                     
-                    // Si y'a une image, on met un thumbnail
-                    let imgHtml = imgPath ? `<img src="${imgPath}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;">` : '';
-                    
-                    btn.innerHTML = `
-                        <div style="display:flex; align-items:center;">
-                            ${imgHtml}
-                            <div style="flex:1; overflow:hidden;">
-                                <strong style="color:${promptDb[trigger].color}">${trigger}</strong>
+                    if (trigger && replace) {
+                        promptDb[trigger] = { text: replace, color: colorPalette[catIdx % 6], image: imgPath };
+                        const btn = document.createElement('button');
+                        btn.className = 'trigger-btn';
+                        
+                        // Création du contenu visuel pour le bouton
+                        let contentHtml = '';
+                        if (imgPath) {
+                            contentHtml = `
+                                <div style="display:flex;align-items:center;">
+                                    <img src="${imgPath}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;">
+                                    <div style="flex:1;">
+                                        <strong style="color:${promptDb[trigger].color};">${trigger}</strong>
+                                        <small>${replace}</small>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            contentHtml = `
+                                <strong style="color:${promptDb[trigger].color};">${trigger}</strong>
                                 <small>${replace}</small>
-                            </div>
-                        </div>`;
-                    btn.onclick = () => window.insertTag(trigger);
-                    if (contentDiv) contentDiv.appendChild(btn);
-                }
+                            `;
+                        }
+                        
+                        btn.innerHTML = contentHtml;
+                        btn.onclick = () => window.insertTag(trigger);
+                        contentDiv.appendChild(btn);
+                    }
+                });
+                
+                catIdx++;
             }
-        });
+            
+        } catch (e) {
+            console.error("Erreur parsing YAML:", e);
+            root.innerHTML = `<p style="color:#ff4d4d;padding:10px;text-align:center;">❌ Erreur lors du parsing du fichier YAML. Vérifie sa syntaxe.<br><span style="font-size:10px;color:#aaa;">Détails console: ${e.message}</span></p>`;
+        }
     }
 
     function processPrompt() {
@@ -324,9 +343,26 @@ window.clearReference = () => {
                         data.generatedImages?.[0]?.image?.imageBytes;
 
             if (b64) {
-                area.innerHTML = `<img src="data:image/png;base64,${b64}" style="max-width:100%; max-height:100%; border-radius:8px;">`;
+                // On récupère aussi le mimeType si présent, sinon on assume png
+                const mime = data.predictions?.[0]?.mimeType || "image/png";
+                
+                area.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
+                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.4);">
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                            <button id="btnNewImage" onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; font-weight:bold; font-size:12px; cursor:pointer;">Nouvelle Image ➕</button>
+                            <a href="data:${mime};base64,${b64}" download="lotus-render.png" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                        </div>
+                    </div>`;
             } else {
-                area.innerHTML = `<div style="color:#aaa;padding:20px;">Image générée, mais format non reconnu.</div>`;
+                area.innerHTML = `<div style="color:#aaa;padding:20px;">Image générée, mais format non reconnu.
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                            <button id="btnNewImage" onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; font-weight:bold; font-size:12px; cursor:pointer;">Nouvelle Image ➕</button>
+                            <a href="data:${mime};base64,${b64}" download="lotus-render.png" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                        </div>
+                    </div>`;
             }
         } catch (e) {
             area.innerHTML = `<div style="color:red;padding:15px;background:#2b0000;font-size:11px;">${e.message}</div>`;
@@ -347,6 +383,120 @@ async function getBase64FromUrl(url) {
     });
 }
 
+
+// --- FONCTION POUR DEBUG: LISTER MODÈLES (FIX) ---
+window.debugListModels = async () => {
+    const key = document.getElementById('apiKey').value.trim();
+    if (!key) {
+        alert("Richard, s'il te plaît, entre ta clé API d'abord !");
+        return;
+    }
+
+    try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // On crée un modal pour afficher ça proprement
+        let modalHtml = `
+            <div id="modelListModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:2000;display:flex;justify-content:center;align-items:center;">
+                <div style="background:#222;padding:20px;border-radius:8px;max-width:80%;max-height:80%;overflow:auto;color:#eee;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
+                        <h2 style="margin:0;">Modèles Disponibles (v1beta)</h2>
+                        <button onclick="document.getElementById('modelListModal').remove()" style="background:#555;color:#fff;border:none;padding:5px 10px;cursor:pointer;">Fermer [X]</button>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <tr style="border-bottom:2px solid #555;">
+                            <th style="text-align:left;padding:5px;">Nom / ID</th>
+                            <th style="text-align:left;padding:5px;">Affichage</th>
+                            <th style="text-align:left;padding:5px;">Description</th>
+                            <th style="text-align:right;padding:5px;">Input tokens</th>
+                            <th style="text-align:right;padding:5px;">Output tokens</th>
+                        </tr>
+        `;
+
+        data.models.forEach(model => {
+            modalHtml += `
+                        <tr style="border-bottom:1px solid #333;">
+                            <td style="padding:5px;font-family:monospace;">${model.name.replace('models/', '')}</td>
+                            <td style="padding:5px;">${model.displayName}</td>
+                            <td style="padding:5px;">${model.description || ''}</td>
+                            <td style="padding:5px;text-align:right;">${model.inputTokenLimit || ''}</td>
+                            <td style="padding:5px;text-align:right;">${model.outputTokenLimit || ''}</td>
+                        </tr>
+            `;
+        });
+
+        modalHtml += `
+                    </table>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    } catch (e) {
+        alert(`Erreur lors de la récupération des modèles: ${e.message}`);
+        console.error("Détails IT:", e);
+    }
+};
+
+    // --- FONCTION POUR PEUPLER LE SÉLECTEUR DE MODÈLES DYNAMIQUEMENT ---
+    async function populateModelSelector() {
+        const key = document.getElementById('apiKey').value.trim();
+        if (!key) return; // On a besoin d'une clé
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            const select = document.getElementById('modelSelect');
+            select.innerHTML = ''; // On efface les valeurs en dur
+
+            // On crée deux groupes pour trier un peu
+            const groupText = document.createElement('optgroup');
+            groupText.label = "Texte & Multimodal";
+            const groupImage = document.createElement('optgroup');
+            groupImage.label = "Génération d'Image (Visual/Imagen)";
+            
+            data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name.replace('models/', '');
+                opt.textContent = `${m.displayName} [${opt.value}]`;
+                
+                // Détection simple du type de modèle pour le classer
+                if (m.name.includes('image')) {
+                    groupImage.appendChild(opt);
+                } else {
+                    groupText.appendChild(opt);
+                }
+            });
+            
+            if (groupText.children.length > 0) select.appendChild(groupText);
+            if (groupImage.children.length > 0) select.appendChild(groupImage);
+            
+            // Sélection par défaut (par exemple, Nano Banana 2 si présent)
+            const defaultModel = "gemini-3.1-flash-image-preview";
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === defaultModel) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            console.log("Modèles chargés dynamiquement dans le sélecteur.");
+
+        } catch (e) {
+            console.error("Erreur lors de la population du sélecteur de modèles:", e);
+            // Fallback ou on laisse vide
+        }
+    }
 
      
     // --- EXPORTS & INIT ---
@@ -376,17 +526,28 @@ async function getBase64FromUrl(url) {
             alert("Liste reçue. Regarde la console (F12).");
         } catch(e) { alert("Erreur scan: " + e.message); }
     };
+    // Fonction pour réinitialiser la zone d'image et le focus
+    window.newGeneration = () => {
+        // 1. Efface la zone d'image
+        document.getElementById('resultArea').innerHTML = `<div style="color:#aaa;padding:20px;text-align:center;">L'image générée s'affichera ici...</div>`;
+        
+        // 2. Ramène le focus sur le champ de saisie du prompt pour en écrire un autre
+        document.getElementById('promptResume').focus();
+        // document.getElementById('promptResume').select(); // Optionnel: sélectionne tout le texte
+    };
 
-    window.onload = () => {
+
+window.onload = () => {
         loadYaml();
         const k = localStorage.getItem('gemini_api_key');
         if (k) {
-            const input = document.getElementById('apiKey');
-            if(input) input.value = k;
+            document.getElementById('apiKey').value = k;
+            // NOUVEAU : On charge les modèles si on a une clé
+            populateModelSelector(); 
         }
         const pr = document.getElementById('promptResume');
         const hl = document.getElementById('highlightLayer');
-        if(pr && hl) pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
+        pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
     };
 </script>
 
