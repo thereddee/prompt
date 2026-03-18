@@ -150,6 +150,31 @@
     let lastRenderedVars = "";
     const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933'];
     
+    // --- FONCTION DE CHARGEMENT ---
+    async function manualLoad() {
+        const input = document.getElementById('fileNameInput') || document.getElementById('ymlPath');
+        const fileName = input.value.trim();
+        if (fileName) {
+            // On s'assure de vider l'ancien contenu avant de recharger
+            if (typeof clearAll === "function") clearAll(); 
+            await loadYaml(fileName);
+        }
+    }
+
+    // --- EXPOSITION DES FONCTIONS AU NIVEAU GLOBAL ---
+    // C'est ICI que le lien se fait avec ton HTML
+    window.manualLoad = manualLoad;
+    window.loadYaml = loadYaml; // Au cas où tu l'appelles ailleurs
+    window.generateImage = generateImage;
+    window.insertTag = insertTag;
+    window.processPrompt = processPrompt;
+    window.toggleSidebar = toggleSidebar;
+    window.copyPrompt = copyPrompt;
+    window.clearAll = clearAll;
+    window.saveApiKey = saveApiKey;
+    window.updateVar = updateVar;
+
+
     // --- GESTION DE LA CLÉ API ---
     function saveApiKey(val) {
         localStorage.setItem('gemini_api_key', val);
@@ -437,19 +462,6 @@ function processPrompt() {
             `;
         }
     }
-
-    // --- IMPORTANT : RENDRE LES FONCTIONS GLOBALES ---
-    // Comme on est dans un module, les boutons "onclick" du HTML ne trouveraient 
-    // pas tes fonctions sinon. On les "pousse" dans l'objet window.
-    window.generateImage = generateImage;
-    window.manualLoad = manualLoad;
-    window.insertTag = insertTag;
-    window.processPrompt = processPrompt;
-    window.toggleSidebar = toggleSidebar;
-    window.copyPrompt = copyPrompt;
-    window.clearAll = clearAll;
-    window.saveApiKey = saveApiKey;
-    window.updateVar = updateVar;
 
     // Initialisation
     window.onload = () => {
