@@ -133,6 +133,7 @@
 </div>
 
 <script>
+    let lastRenderedVars = ""; // Garde en mémoire les variables actuellement affichées
     let promptDb = {}; // Dictionnaire global : { ":trigger": "replace text" }
     let currentVariables = {}; // Stocke les valeurs tapées par l'utilisateur
     const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933']; // Couleurs pour les tags
@@ -282,7 +283,7 @@ function processPrompt() {
         document.getElementById('promptComplet').value = finalOutput;
     }
 
-    // --- GESTION DES VARIABLES ---
+// --- GESTION DES VARIABLES ---
     function extractAndRenderVariables(text) {
         const regex = /{{(.*?)}}/g;
         let varsFound = new Set();
@@ -295,19 +296,32 @@ function processPrompt() {
         const container = document.getElementById('variablesContainer');
         const listDiv = document.getElementById('variablesList');
         
+        // On crée une "signature" unique des variables actuelles (ex: "arme,couleur")
+        const currentVarsSignature = Array.from(varsFound).sort().join(',');
+
+        // Si les variables requises n'ont pas changé, on ne redessine RIEN. 
+        // C'est ça qui empêche de perdre le focus !
+        if (lastRenderedVars === currentVarsSignature) {
+            if (varsFound.size === 0) container.style.display = 'none';
+            return;
+        }
+
+        // Si on arrive ici, c'est que les variables ont changé (ajout ou retrait)
+        lastRenderedVars = currentVarsSignature;
+
         if (varsFound.size === 0) {
             container.style.display = 'none';
             return;
         }
 
         container.style.display = 'flex';
-        listDiv.innerHTML = ''; // Reset
+        listDiv.innerHTML = ''; // Reset sécuritaire car on a de nouveaux champs
 
         varsFound.forEach(varName => {
             const row = document.createElement('div');
             row.className = 'var-row';
             
-            // Si la variable n'existe pas encore dans notre state, on la crée
+            // Si la variable n'existe pas encore dans notre state, on l'initialise
             if (currentVariables[varName] === undefined) {
                 currentVariables[varName] = '';
             }
