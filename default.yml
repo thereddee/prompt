@@ -20,23 +20,29 @@ matches:
           format: "%m/%d/%Y"
 
   ### STYLES DE GÉNÉRATION
-  - trigger: ":watercolor"
-    replace: "Artistic Style: Watercolor and ink illustration. Fine black fineliner outlines. Textured colors with wash effects."
+  #- trigger: ":watercolor"
+  #  replace: "Artistic Style: Watercolor and ink illustration. Fine black fineliner outlines. Textured colors with wash effects."
 
-  - trigger: ":rpgstyle"
-    replace: "High-fantasy digital illustration with a modern watercolor and ink aesthetic. The style features clean, thin ink outlines combined with soft, textured digital washes. Use warm, ambient lighting with subtle rim lighting. Proportions and facial features follow a modern anime/manga influence, large expressive eyes, detailed hair. Subtle paper grain texture overlay, tabletop RPG sourcebook feel."
+  #- trigger: ":rpgstyle"
+  #  replace: "High-fantasy digital illustration with a modern watercolor and ink aesthetic. The style features clean, thin ink outlines combined with soft, textured digital washes. Use warm, ambient lighting with subtle rim lighting. Proportions and facial features follow a modern anime/manga influence, large expressive eyes, detailed hair. Subtle paper grain texture overlay, tabletop RPG sourcebook feel."
 
-  - trigger: ":bookstyle"
-    replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. Clean, thin ink outlines, soft textured digital watercolor washes. The composition dissolves into a Digital Watercolor Wash at the borders, creating a vignette effect. Applied textures include subtle Paint splatters and a Cold-press paper grain. Lighting is atmospheric and warm."
+  #- trigger: ":bookstyle"
+  #  replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. Clean, thin ink outlines, soft textured digital watercolor washes. The composition dissolves into a Digital Watercolor Wash at the borders, creating a vignette effect. Applied textures include subtle Paint splatters and a Cold-press paper grain. Lighting is atmospheric and warm."
 
-  - trigger: ":sketchbook"
-    replace: "Sketchbook style with vignetted edges, light paint splatters, and a background that fades into the white of the paper (negative space)."
+  #- trigger: ":sketchbook"
+  #  replace: "Sketchbook style with vignetted edges, light paint splatters, and a background that fades into the white of the paper (negative space)."
 
   - trigger: ":rpgcomic"
     replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
-  - trigger: ":kmarvel"
-    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
+  - trigger: ":marvel"
+    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation."
+
+  ### KAE - RÉFÉRENCES
+  - trigger: ":kae-ref"
+    replace: "Character sheet of Kaelith Solari"
+    image: "assets/ks.c.jpeg"
+
 
   ### KAE - CORPS & VISAGE
   - trigger: ":kbody"
