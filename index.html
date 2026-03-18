@@ -207,71 +207,59 @@
     // --- GÉNÉRATION BLINDÉE ---
 
 
-async function generateImage() {
-    const key = document.getElementById('apiKey').value.trim();
-    const prompt = document.getElementById('promptComplet').value.trim();
-    const model = document.getElementById('modelSelect').value;
-    const ratio = document.getElementById('aspectRatioSelect').value;
-    const area = document.getElementById('resultArea');
+    async function generateImage() {
+        const key = document.getElementById('apiKey').value.trim();
+        const promptText = document.getElementById('promptComplet').value.trim();
+        const model = document.getElementById('modelSelect').value;
+        const ratio = document.getElementById('aspectRatioSelect').value;
+        const area = document.getElementById('resultArea');
 
-    if (!key || !prompt) return alert("Richard, on a besoin de gaz pour faire rouler le Lotus !");
-    
-    area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Requête de prédiction vers ${model}... 🚀</div>`;
+        if (!key || !promptText) return;
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Extraction des pixels de ${model}... 🎨</div>`;
 
-    try {
-        // --- LE FIX CRUCIAL ---
-        // Pour Imagen 4 (lignes 34-36), la méthode est 'predict'
-        const isImagen4 = model.includes('imagen-4');
-        const method = isImagen4 ? 'predict' : 'generateImages'; 
-        
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                instances: [{ prompt: prompt }],
-                parameters: { 
-                    sampleCount: 1, 
-                    aspectRatio: ratio,
-                    outputMimeType: "image/jpeg"
-                }
-            })
-        });
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instances: [{ prompt: promptText }],
+                    parameters: { sampleCount: 1, aspectRatio: ratio }
+                })
+            });
 
-        const data = await response.json();
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
 
-        if (!response.ok) {
-            throw new Error(data.error?.message || `Erreur HTTP ${response.status}`);
-        }
+            // --- LOGIQUE D'EXTRACTION ROBUSTE ---
+            // On cherche dans tous les formats possibles (Imagen 4, Gemini 3, Vertex)
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes || 
+                        data.predictions?.[0]?.bytesBase64 || 
+                        data.predictions?.[0]?.image?.imageBytes;
 
-        // Sur l'endpoint 'predict', le format de réponse peut varier
-        // On check les deux places possibles pour le Base64
-        const b64 = data.predictions?.[0]?.bytesBase64 || 
-                    data.generatedImages?.[0]?.image?.imageBytes;
+            if (b64) {
+                area.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
+                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent); box-shadow: 0 0 20px rgba(0,212,255,0.3);">
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">💾 SAUVEGARDER</a>
+                        </div>
+                    </div>`;
+            } else {
+                // Si on ne trouve rien, on affiche le JSON pour debugger
+                console.log("JSON reçu de Google:", data);
+                throw new Error("Pixels introuvables. On a reçu le JSON, mais l'image n'est pas là où on l'attendait. Regarde la console (F12).");
+            }
 
-        if (b64) {
-            area.innerHTML = `
-                <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
-                    <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:1px solid var(--accent);">
-                    <div style="margin-top:10px;">
-                        <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                    </div>
-                </div>`;
-        } else {
-            throw new Error("Réponse reçue, mais pas de pixels. Vérifie le format de sortie.");
-        }
-
-    } catch (e) {
-        console.error("Détails IT:", e);
-        area.innerHTML = `
-            <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                <h3 style="margin-top:0">❌ Échec du Render (${model})</h3>
+        } catch (e) {
+            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
+                <h3 style="margin-top:0">❌ Erreur de Rendu</h3>
                 <pre style="white-space:pre-wrap;">${e.message}</pre>
-                <p style="color:#888; font-size:10px;">Note : On utilise maintenant l'endpoint :predict pour Imagen 4.</p>
             </div>`;
+        }
     }
-}
 
 
 
