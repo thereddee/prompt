@@ -147,7 +147,7 @@
     let lastRenderedVars = "";
     const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933'];
 
-    // --- CHARGEMENT & PARSING ---
+    // --- FONCTIONS DE BASE ---
     async function loadYaml(fileName = 'default.yml') {
         const sidebarContent = document.getElementById('sidebarContent');
         if (sidebarContent) sidebarContent.innerHTML = '<p style="color: #888; text-align: center;">Sync en cours... 🔄</p>';
@@ -208,7 +208,6 @@
         });
     }
 
-    // --- ÉDITION & UI ---
     function insertTag(trigger) {
         const textarea = document.getElementById('promptResume');
         textarea.value = textarea.value + (textarea.value.endsWith(' ') || textarea.value === '' ? '' : ' ') + trigger + ' ';
@@ -324,11 +323,9 @@
         resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Génération Nano Banana 2... ⏳</div>`;
 
         try {
-            // Utilisation d'un proxy pour éviter le CORS direct depuis GitHub
             const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
-
-            const response = await fetch(proxyUrl, {
+            // On tente le fetch direct d'abord. Si ça fail, l'utilisateur devra utiliser l'extension CORS.
+            const response = await fetch(googleUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -353,10 +350,14 @@
                 resultArea.innerHTML = `<img src="data:image/jpeg;base64,${base64Image}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow: 0 4px 15px rgba(0,212,255,0.3);">
                                        <button class="btn-generate" onclick="window.generateImage()">Regénérer ✨</button>`;
             } else {
-                throw new Error("Image non trouvée dans la réponse.");
+                throw new Error("Image non trouvée dans la réponse JSON.");
             }
         } catch (error) {
-            resultArea.innerHTML = `<div style="color:#ff4d4d; padding:20px; background:#2b0000; border-radius:8px; overflow:auto; height:100%; font-family:monospace; font-size:12px;">❌ Erreur: ${error.message}</div>
+            let msg = error.message;
+            if (msg.includes("fetch")) {
+                msg = "BLOCAGE RÉSEAU (CORS) : \nLe navigateur refuse la connexion directe. \n\n👉 SOLUTION : Active ton extension 'Allow CORS' sur ton navigateur.";
+            }
+            resultArea.innerHTML = `<div style="color:#ff4d4d; padding:20px; background:#2b0000; border-radius:8px; overflow:auto; height:100%; font-family:monospace; font-size:12px;">❌ Erreur: ${msg}</div>
                                    <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
         }
     }
@@ -366,7 +367,7 @@
         if (fileName) await loadYaml(fileName);
     }
 
-    // --- EXPOSER LES FONCTIONS AU HTML ---
+    // --- ATTACHEMENT GLOBAL (Crucial pour le type="module") ---
     window.manualLoad = manualLoad;
     window.generateImage = generateImage;
     window.insertTag = insertTag;
