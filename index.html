@@ -316,8 +316,13 @@
 
         try {
             // Test avec l'endpoint v1 au lieu de v1beta
-            const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            // const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
             
+            // Teste avec Gemini 2.5 Flash pour voir si le 404 disparait (ça donnera une erreur de méthode, mais pas un 404)
+            const modelName = "gemini-2.5-flash"; 
+            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+
             const response = await fetch(googleUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
