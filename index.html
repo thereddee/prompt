@@ -384,15 +384,17 @@ function processPrompt() {
             return;
         }
 
-        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Génération avec Nano Banana 2 en cours... ⏳</div>`;
+        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Passage par le Proxy CORS... ⏳</div>`;
 
         try {
-            // Pour l'image, on repasse sur l'endpoint v1beta qui supporte "generateImages"
-            // const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
-            const response = await fetch(endpoint, {
+            // L'URL de l'API Google
+            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            
+            // On enveloppe l'URL dans un proxy pour contourner le blocage du navigateur
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
+            
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
-                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -409,15 +411,15 @@ function processPrompt() {
             });
 
             if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(`Erreur HTTP ${response.status}\n${JSON.stringify(errData, null, 2)}`);
+                let errorBody;
+                try { errorBody = await response.json(); } catch(e) { errorBody = await response.text(); }
+                throw new Error(`HTTP ${response.status}\n\n${typeof errorBody === 'object' ? JSON.stringify(errorBody, null, 2) : errorBody}`);
             }
 
             const data = await response.json();
             
-            // Extraction du Base64 selon le format officiel de l'API d'image
-            const base64Image = data.generatedImages?.[0]?.image?.imageBytes || 
-                               data.predictions?.[0]?.bytesBase64;
+            // Extraction du Base64 (Format Gemini 3 Flash Image)
+            const base64Image = data.generatedImages?.[0]?.image?.imageBytes;
 
             if (base64Image) {
                 resultArea.innerHTML = `
@@ -425,15 +427,16 @@ function processPrompt() {
                     <button class="btn-generate" onclick="generateImage()">Regénérer ✨</button>
                 `;
             } else {
-                throw new Error(`Image non trouvée. Vérifie le format de réponse.\n\nRéponse brute:\n${JSON.stringify(data, null, 2)}`);
+                throw new Error(`Image non trouvée. Réponse brute :\n${JSON.stringify(data, null, 2)}`);
             }
 
         } catch (error) {
-            console.error("DEBUG API :", error);
+            console.error("DEBUG PROXY :", error);
             resultArea.innerHTML = `
-                <div style="color: #ff4d4d; font-size: 0.8em; text-align: left; background: #2b0000; padding: 15px; border: 1px solid #ff4d4d; border-radius: 8px; width:100%; height:100%; overflow:auto; box-sizing: border-box;">
-                    <h3 style="margin-top:0;">❌ Erreur de l'API</h3>
-                    <pre style="white-space: pre-wrap; font-family: monospace;">${error.message}</pre>
+                <div style="color: #ff4d4d; font-size: 0.85em; text-align: left; background: #2b0000; padding: 20px; border: 1px solid #ff4d4d; border-radius: 8px; width:100%; height:100%; overflow:auto; box-sizing: border-box;">
+                    <h3 style="margin-top:0;">❌ Erreur CORS ou API</h3>
+                    <pre style="white-space: pre-wrap; font-family: 'Consolas', monospace; color: #ffb3b3;">${error.message}</pre>
+                    <p style="margin-top:10px; font-size: 0.9em; color: #aaa;">Si l'erreur persiste, essaie d'activer une extension "Allow CORS" dans ton navigateur.</p>
                 </div>
                 <button class="btn-generate" onclick="generateImage()" style="z-index: 10;">Réessayer ✨</button>
             `;
