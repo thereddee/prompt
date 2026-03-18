@@ -208,67 +208,68 @@
 async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
-        const model = document.getElementById('modelSelect').value;
+        const model = document.getElementById('modelSelect').value; // Ex: imagen-4.0-generate-001
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Richard, ça prend du jus (Clé + Prompt) !");
+        if (!key || !prompt) return alert("Richard, on a besoin de la clé et du prompt !");
         
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération avec ${model}... 🚀</div>`;
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Tentative de connexion directe à ${model}... 🚀</div>`;
 
         try {
-            // CRUCIAL : On force 'v1beta' car tes modèles sont des versions 'preview' ou 'new'
+            // On utilise v1beta car tes modèles sont tous en 'preview' sur ta capture
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
 
             const res = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    instances: [{ prompt: prompt }], 
+                // On garde seulement le strict minimum
+                body: JSON.stringify({
+                    instances: [{ prompt: prompt }],
                     parameters: { 
                         sampleCount: 1, 
-                        aspectRatio: ratio,
-                        outputMimeType: "image/jpeg" 
-                    } 
+                        aspectRatio: ratio 
+                    }
                 })
             });
 
-            const rawText = await res.text();
+            // Si le fetch passe, on lit la réponse
+            const text = await res.text();
             let data = {};
-            
-            try {
-                if (rawText) data = JSON.parse(rawText);
-            } catch (e) {
-                throw new Error(`Réponse non-JSON (CORS ou 404 HTML). Brute: ${rawText.substring(0,100)}`);
+            try { data = JSON.parse(text); } catch(e) { 
+                throw new Error("Réponse corrompue ou vide. Check ta console F12."); 
             }
 
-            if (!res.ok) {
-                // Si c'est encore un 404, ça veut dire que l'endpoint :generateImages est pas encore up pour ce modèle
-                throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
-            }
+            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
 
-            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
-            
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64;
+
             if (b64) {
                 area.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
-                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; box-shadow: 0 4px 20px rgba(0,212,255,0.4);">
-                        <div style="margin-top:10px; display:flex; gap:10px;">
+                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border: 1px solid var(--accent);">
+                        <div style="margin-top:10px;">
                             <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:image/jpeg;base64,${b64}" download="lotus-render.jpg" style="background:#444; color:white; padding:10px 15px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                            <a href="data:image/jpeg;base64,${b64}" download="render.jpg" style="background:#444; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; margin-left:10px;">💾</a>
                         </div>
                     </div>`;
             } else {
-                throw new Error("200 OK, mais pas d'image dans le JSON. Vérifie tes permissions AI Studio.");
+                area.innerHTML = `<div style="color:orange; padding:20px;">200 OK mais pas d'image. Détails: <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
             }
 
         } catch (e) {
-            area.innerHTML = `<div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                <h3 style="margin-top:0">❌ Erreur API (${model})</h3>
-                <pre style="white-space:pre-wrap; font-family:monospace;">${e.message}</pre>
-                <p style="font-size:10px; color:#aaa; margin-top:10px;">Note : Assure-toi que ton extension <b>CORS</b> est bien à ON pour googleapis.com.</p>
-            </div>
-            <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
+            console.error("DEBUG IT:", e);
+            area.innerHTML = `
+                <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
+                    <h3 style="margin-top:0">❌ Failed to Fetch</h3>
+                    <p>Le navigateur a bloqué la requête. <b>Vérifie ces 3 points :</b></p>
+                    <ol>
+                        <li>Ton extension <b>Allow CORS</b> doit être réglée sur "ON" (souvent l'icône devient colorée).</li>
+                        <li>Dans les options de l'extension, assure-toi qu'elle autorise <code>*://*.googleapis.com/*</code>.</li>
+                        <li>Essaie de rafraîchir la page (F5) après avoir activé l'extension.</li>
+                    </ol>
+                    <pre style="font-size:9px; color:#888;">${e.message}</pre>
+                </div>
+                <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
         }
     }
     // --- EXPORTS & INIT ---
