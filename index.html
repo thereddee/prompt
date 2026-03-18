@@ -4,394 +4,276 @@
     <meta charset="UTF-8">
     <title>Lotus de Fer - Studio de Génération</title>
     <style>
-        :root {
-            --bg-main: #121212;
-            --bg-panel: #1e1e1e;
-            --border: #333;
-            --accent: #00d4ff;
-            --accent-hover: #00a3cc;
-            --text: #e0e0e0;
-            --tag-color: #ff4d4d;
-        }
-
+        :root { --bg-main: #121212; --bg-panel: #1e1e1e; --border: #333; --accent: #00d4ff; --text: #e0e0e0; --tag-color: #ff4d4d; }
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-main); color: var(--text); margin: 0; height: 100vh; display: flex; overflow: hidden; }
-
-        /* --- LAYOUT PRINCIPAL --- */
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text); margin: 0; height: 100vh; display: flex; overflow: hidden; }
         .workspace { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; gap: 20px; }
-        .sidebar { width: 350px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s ease, width 0.3s ease; }
+        .sidebar { width: 350px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: 0.3s; }
         .sidebar.collapsed { width: 0; border: none; transform: translateX(100%); }
-
-        /* --- HEADER & CONFIG (Gauche) --- */
         .top-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         .input-group { display: flex; flex-direction: column; flex: 1; gap: 5px; }
-        .input-group label { font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .input-group label { font-size: 0.75em; color: #aaa; text-transform: uppercase; }
         .input-group input, .input-group select { background: #111; color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-family: monospace; }
         .btn-toggle-sidebar { background: var(--accent); color: #000; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-        /* --- ÉDITEURS DE PROMPT --- */
-        .section-title { color: var(--accent); margin: 0 0 10px 0; font-size: 1.1em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
-        
+        .section-title { color: var(--accent); margin: 0 0 10px 0; font-size: 1.1em; text-transform: uppercase; display: flex; justify-content: space-between; }
         .editor-container { position: relative; width: 100%; height: 120px; background: #111; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-        
-        /* Synchronisation absolue entre le fond et le texte */
-        .highlight-layer, #promptResume { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            padding: 12px; margin: 0;
-            font-family: 'Consolas', 'Courier New', monospace; /* Force une police fixe */
-            font-size: 14px; line-height: 1.5; letter-spacing: normal;
-            white-space: pre-wrap; word-wrap: break-word; word-break: break-all;
-            border: none; box-sizing: border-box;
-        }
-        
-        .highlight-layer { color: transparent; z-index: 1; pointer-events: none; overflow-y: hidden; }
-        #promptResume { background: transparent; color: var(--text); z-index: 2; resize: none; outline: none; caret-color: white; overflow-y: auto; }
-        
-        #promptComplet { width: 100%; height: 150px; background: #0a0a0a; color: #aaa; border: 1px solid var(--border); padding: 12px; font-family: 'Consolas', 'Courier New', monospace; border-radius: 4px; resize: none; line-height: 1.5; box-sizing: border-box; }
-
-        /* --- VARIABLES --- */
+        .highlight-layer, #promptResume { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 12px; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+        .highlight-layer { color: transparent; z-index: 1; pointer-events: none; }
+        #promptResume { background: transparent; color: var(--text); border: none; z-index: 2; resize: none; outline: none; caret-color: white; }
+        #promptComplet { width: 100%; height: 150px; background: #0a0a0a; color: #aaa; border: 1px solid var(--border); padding: 12px; font-family: 'Consolas', monospace; border-radius: 4px; resize: none; }
         #variablesContainer { display: flex; flex-direction: column; gap: 10px; background: #2a2510; border: 1px solid #665200; padding: 15px; border-radius: 4px; display: none; }
-        .var-row { display: flex; align-items: center; gap: 10px; }
-        .var-row label { font-family: monospace; color: #ffcc00; font-weight: bold; width: 120px; }
-        .var-row input { flex: 1; background: #111; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px; }
-
-        /* --- RÉSULTAT (Image Placeholder) --- */
-        .result-area { flex: 1; border: 2px dashed var(--border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #0a0a0a; min-height: 200px; position: relative; }
-        .result-placeholder { color: #555; font-size: 1.2em; text-transform: uppercase; letter-spacing: 2px; }
-        .btn-generate { position: absolute; bottom: 20px; right: 20px; background: var(--tag-color); color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 1.1em; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 77, 77, 0.3); }
-
-        /* --- SIDEBAR (Droite) --- */
-        .sidebar-header { padding: 15px; background: #111; border-bottom: 1px solid var(--border); font-weight: bold; text-transform: uppercase; color: var(--accent); }
+        .var-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .var-row label { font-family: monospace; color: #ffcc00; width: 120px; }
+        .var-row input { flex: 1; background: #111; color: white; border: 1px solid #555; padding: 5px; }
+        .result-area { flex: 1; border: 2px dashed var(--border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #0a0a0a; min-height: 250px; position: relative; }
+        .btn-generate { position: absolute; bottom: 20px; right: 20px; background: var(--tag-color); color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .sidebar-header { padding: 15px; background: #111; border-bottom: 1px solid var(--border); color: var(--accent); font-weight: bold; }
         .sidebar-content { flex: 1; overflow-y: auto; padding: 10px; }
-        
-        details { margin-bottom: 10px; background: #252525; border-radius: 4px; border: 1px solid var(--border); }
-        details summary { padding: 12px; font-weight: bold; cursor: pointer; outline: none; user-select: none; color: #ddd; }
-        details summary:hover { background: #2a2a2a; }
-        .details-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        
-        .trigger-btn { background: #1a1a1a; border: 1px solid #444; color: var(--text); padding: 10px; border-radius: 4px; text-align: left; cursor: pointer; font-family: monospace; transition: 0.2s; display: flex; flex-direction: column; gap: 4px; }
-        .trigger-btn:hover { border-color: var(--accent); background: #222; }
-        .trigger-btn strong { color: var(--accent); font-size: 1.1em; }
-        .trigger-btn small { color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } })
+        details { margin-bottom: 8px; background: #252525; border: 1px solid var(--border); border-radius: 4px; }
+        summary { padding: 10px; cursor: pointer; font-weight: bold; }
+        .details-content { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .trigger-btn { background: #1a1a1a; border: 1px solid #444; color: var(--text); padding: 8px; border-radius: 4px; text-align: left; cursor: pointer; font-family: monospace; display: flex; flex-direction: column; }
+        .trigger-btn strong { color: var(--accent); }
+        .trigger-btn small { color: #888; font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="workspace">
-    
     <div class="top-bar">
         <div class="input-group">
             <label>Fichier YAML</label>
-            <input type="text" id="ymlPath" value="default.yml" onchange="loadYaml()">
+            <input type="text" id="ymlPath" value="default.yml" onchange="window.manualLoad()">
         </div>
         <div class="input-group">
             <label>Modèle IA</label>
             <select id="modelSelect">
-                <option value="nanobanana">Nano Banana 2</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="imagen-3">Imagen 3 (Si dispos)</option>
             </select>
         </div>
         <div class="input-group">
-            <label>Format (Ratio)</label>
+            <label>Ratio</label>
             <select id="aspectRatioSelect">
-                <option value="1:1">Carré (1:1)</option>
-                <option value="16:9">Paysage BD (16:9)</option>
-                <option value="9:16">Mobile/Vertical (9:16)</option>
-                <option value="4:3">Classique (4:3)</option>
-                <option value="3:4">Portrait Perso (3:4)</option>
+                <option value="1:1">1:1</option>
+                <option value="16:9">16:9</option>
+                <option value="3:4">3:4</option>
             </select>
         </div>
         <div class="input-group">
             <label>Clé API</label>
-            <input type="password" id="apiKey" placeholder="sk-..." oninput="saveApiKey(this.value)">
+            <input type="password" id="apiKey" placeholder="sk-..." oninput="window.saveApiKey(this.value)">
         </div>
-        <button class="btn-toggle-sidebar" onclick="toggleSidebar()">☰ Menu</button>
+        <button class="btn-toggle-sidebar" onclick="window.toggleSidebar()">☰ Menu</button>
     </div>
 
     <div>
         <h3 class="section-title">Prompt Résumé</h3>
         <div class="editor-container">
             <div id="highlightLayer" class="highlight-layer"></div>
-            <textarea id="promptResume" placeholder="Clique sur les tags à droite ou tape tes propres instructions ici..." oninput="processPrompt()"></textarea>
+            <textarea id="promptResume" placeholder="Tappe tes tags ici..." oninput="window.processPrompt()"></textarea>
         </div>
     </div>
 
     <div id="variablesContainer">
-        <h3 class="section-title" style="color: #ffcc00; margin: 0;">Paramètres Requis</h3>
+        <h3 class="section-title" style="color: #ffcc00;">Variables</h3>
         <div id="variablesList"></div>
     </div>
 
     <div>
-        <h3 class="section-title">Prompt Complet (Généré)</h3>
-        <textarea id="promptComplet" readonly placeholder="Le texte final traduit avec les variables s'affichera ici..."></textarea>
+        <h3 class="section-title">Prompt Complet</h3>
+        <textarea id="promptComplet" readonly></textarea>
+        <button onclick="window.copyPrompt()" style="margin-top:5px; background:var(--accent); color:black; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">Copier</button>
     </div>
 
-    <div class="result-area">
-        <div class="result-placeholder">Zone de Rendu Image</div>
-        <button class="btn-generate" onclick="generateImage()">Générer l'image ✨</button>
+    <div class="result-area" id="resultArea">
+        <div class="result-placeholder">Zone de Rendu</div>
+        <button class="btn-generate" onclick="window.generateImage()">Générer ✨</button>
     </div>
-
+    
+    <button onclick="window.checkModels()" style="background:#333; color:#888; border:none; padding:5px; font-size:10px; cursor:pointer;">Debug: Lister Modèles</button>
 </div>
 
 <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">Bibliothèque de Prompts</div>
-    <div class="sidebar-content" id="sidebarContent">
-        <p style="color: #666; text-align: center; margin-top: 20px;">Chargement du YAML...</p>
-    </div>
+    <div class="sidebar-header">Bibliothèque</div>
+    <div class="sidebar-content" id="sidebarContent"></div>
 </div>
 
 <script type="module">
-    // --- VARIABLES GLOBALES ---
+    // --- VARIABLES ---
     let promptDb = {};
     let currentVariables = {};
     let lastRenderedVars = "";
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- FONCTIONS DE BASE ---
+    // --- CORE FUNCTIONS ---
     async function loadYaml(fileName = 'default.yml') {
-        const sidebarContent = document.getElementById('sidebarContent');
-        if (sidebarContent) sidebarContent.innerHTML = '<p style="color: #888; text-align: center;">Sync en cours... 🔄</p>';
-        promptDb = {};
-
+        const root = document.getElementById('sidebarContent');
+        if (root) root.innerHTML = '<p>Chargement...</p>';
         try {
-            const response = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error(`Erreur ${response.status} sur le YAML`);
-            const content = await response.text();
-            renderSidebar(content);
-            processPrompt(); 
-        } catch (err) {
-            if (sidebarContent) sidebarContent.innerHTML = `<p style="color: #ff4d4d; padding: 15px;">Erreur: ${err.message}</p>`;
+            const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
+            if (!res.ok) throw new Error();
+            const text = await res.text();
+            parseYaml(text);
+        } catch (e) {
+            if (root) root.innerHTML = '<p style="color:red">Erreur YAML</p>';
         }
     }
 
-    function renderSidebar(content) {
+    function parseYaml(content) {
         const root = document.getElementById('sidebarContent');
-        if (!root) return;
         root.innerHTML = '';
         const lines = content.split('\n');
-        let currentDetails = null;
-        let contentDiv = null;
-        let categoryIndex = 0;
+        let currentDetails = null, contentDiv = null, catIdx = 0;
+        const regex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
 
-        const matchRegex = /^\s*-\s*trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n\s*-|\n\s*vars:|\n\s*#|$)|\|([\s\S]*?)(?=\n\s*-|\n\s*vars:|\n\s*#|$))/;
-
-        lines.forEach((line, index) => {
+        lines.forEach((line, i) => {
             if (line.trim().startsWith('###')) {
-                const categoryName = line.replace('###', '').trim();
                 currentDetails = document.createElement('details');
-                currentDetails.open = false; 
                 const summary = document.createElement('summary');
-                summary.textContent = categoryName;
-                summary.style.borderLeft = `4px solid ${colorPalette[categoryIndex % colorPalette.length]}`;
+                summary.textContent = line.replace('###', '').trim();
+                summary.style.borderLeft = `4px solid ${colorPalette[catIdx % 6]}`;
                 contentDiv = document.createElement('div');
                 contentDiv.className = 'details-content';
-                currentDetails.appendChild(summary);
-                currentDetails.appendChild(contentDiv);
+                currentDetails.append(summary, contentDiv);
                 root.appendChild(currentDetails);
-                categoryIndex++;
+                catIdx++;
                 return;
             }
-
-            const segment = lines.slice(index, index + 10).join('\n');
-            const match = segment.match(matchRegex);
+            const match = lines.slice(i, i+10).join('\n').match(regex);
             if (match && line.trim().startsWith('- trigger:')) {
-                const trigger = match[1];
-                let replace = (match[2] || match[3] || "").trim().replace(/\s+/g, ' ');
-                if ([':espanso', ':txt', ':date', ':shell'].includes(trigger)) return;
-
-                promptDb[trigger] = { text: replace, color: colorPalette[(categoryIndex - 1) % colorPalette.length] || '#888' };
+                const trig = match[1];
+                const repl = (match[2] || match[3] || "").trim().replace(/\s+/g, ' ');
+                promptDb[trig] = { text: repl, color: colorPalette[(catIdx-1)%6] || '#888' };
                 const btn = document.createElement('button');
                 btn.className = 'trigger-btn';
-                btn.innerHTML = `<strong style="color: ${promptDb[trigger].color}">${trigger}</strong><small>${replace}</small>`;
-                btn.onclick = () => window.insertTag(trigger);
+                btn.innerHTML = `<strong style="color:${promptDb[trig].color}">${trig}</strong><small>${repl}</small>`;
+                btn.onclick = () => window.insertTag(trig);
                 if (contentDiv) contentDiv.appendChild(btn);
             }
         });
     }
 
-    // --- ÉDITION ---
-    function insertTag(trigger) {
-        const textarea = document.getElementById('promptResume');
-        if (!textarea) return;
-        textarea.value = textarea.value + (textarea.value.endsWith(' ') || textarea.value === '' ? '' : ' ') + trigger + ' ';
-        textarea.focus();
-        processPrompt();
-    }
-
     function processPrompt() {
-        const textarea = document.getElementById('promptResume');
-        const highlightLayer = document.getElementById('highlightLayer');
-        const rawText = textarea.value;
-
-        let highlightedHTML = rawText
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') 
-            .replace(/(:\w[\w-]*)/g, (match) => {
-                if (promptDb[match]) return `<span style="background-color: ${promptDb[match].color}50; border-radius: 2px;">${match}</span>`;
-                return match;
-            });
+        const text = document.getElementById('promptResume').value;
+        const layer = document.getElementById('highlightLayer');
         
-        if (rawText[rawText.length - 1] === '\n') highlightedHTML += ' ';
-        highlightLayer.innerHTML = highlightedHTML;
+        // Visual Highlight
+        layer.innerHTML = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;color:${promptDb[m].color};font-weight:bold">${m}</span>` : m)
+            .replace(/\n/g, '<br>') + (text.endsWith('\n') ? ' ' : '');
 
-        let fullPrompt = rawText;
-        const foundTags = rawText.match(/(:\w[\w-]*)/g) || [];
-        foundTags.forEach(tag => {
-            if (promptDb[tag]) {
-                let cleanReplace = promptDb[tag].text.replace(/\[Use.*?\]\s*/gi, '').trim();
-                fullPrompt = fullPrompt.replace(tag, cleanReplace);
-            }
+        // Compilation
+        let full = text;
+        (text.match(/(:\w[\w-]*)/g) || []).forEach(t => {
+            if (promptDb[t]) full = full.replace(t, promptDb[t].text.replace(/\[Use.*?\]\s*/gi, '').trim());
         });
 
-        extractAndRenderVariables(fullPrompt);
-        let finalOutput = fullPrompt;
-        Object.keys(currentVariables).forEach(varName => {
-            const val = currentVariables[varName] || `[${varName}]`;
-            finalOutput = finalOutput.replace(new RegExp(`{{${varName}}}`, 'g'), val);
+        // Vars
+        const vRegex = /{{(.*?)}}/g;
+        let vFound = new Set(), m;
+        while ((m = vRegex.exec(full)) !== null) vFound.add(m[1]);
+        
+        renderVars(vFound);
+        
+        let final = full;
+        vFound.forEach(v => {
+            final = final.replace(new RegExp(`{{${v}}}`, 'g'), currentVariables[v] || `[${v}]`);
         });
-        document.getElementById('promptComplet').value = finalOutput;
+        document.getElementById('promptComplet').value = final;
     }
 
-    function extractAndRenderVariables(text) {
-        const regex = /{{(.*?)}}/g;
-        let varsFound = new Set();
-        let match;
-        while ((match = regex.exec(text)) !== null) varsFound.add(match[1]);
-
-        const container = document.getElementById('variablesContainer');
-        const listDiv = document.getElementById('variablesList');
-        const currentVarsSignature = Array.from(varsFound).sort().join(',');
-
-        if (lastRenderedVars === currentVarsSignature) {
-            if (varsFound.size === 0 && container) container.style.display = 'none';
-            return;
-        }
-
-        lastRenderedVars = currentVarsSignature;
-        if (varsFound.size === 0) {
-            if (container) container.style.display = 'none';
-            return;
-        }
-
-        if (container) container.style.display = 'flex';
-        if (listDiv) {
-            listDiv.innerHTML = ''; 
-            varsFound.forEach(varName => {
-                const row = document.createElement('div');
-                row.className = 'var-row';
-                if (currentVariables[varName] === undefined) currentVariables[varName] = '';
-                row.innerHTML = `<label>${varName}</label><input type="text" value="${currentVariables[varName]}" oninput="window.updateVar('${varName}', this.value)">`;
-                listDiv.appendChild(row);
-            });
-        }
+    function renderVars(vSet) {
+        const sig = Array.from(vSet).sort().join(',');
+        if (lastRenderedVars === sig) return;
+        lastRenderedVars = sig;
+        
+        const cont = document.getElementById('variablesContainer');
+        const list = document.getElementById('variablesList');
+        if (vSet.size === 0) { cont.style.display = 'none'; return; }
+        
+        cont.style.display = 'flex';
+        list.innerHTML = '';
+        vSet.forEach(v => {
+            if (currentVariables[v] === undefined) currentVariables[v] = '';
+            const d = document.createElement('div');
+            d.className = 'var-row';
+            d.innerHTML = `<label>${v}</label><input type="text" value="${currentVariables[v]}" oninput="window.updateVar('${v}', this.value)">`;
+            list.appendChild(d);
+        });
     }
 
-    function updateVar(name, value) {
-        currentVariables[name] = value;
-        processPrompt();
-    }
-
-    // --- API & GENERATION ---
-    async function checkModels() {
-        const apiKey = document.getElementById('apiKey').value.trim();
-        if (!apiKey) return alert("Besoin de la clé pour scanner !");
-        console.log("🔍 Scanning models...");
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
-            const data = await res.json();
-            console.log("✅ Modèles disponibles :", data.models);
-            alert("Liste des modèles reçue ! Regarde ta console (F12) pour voir les vrais noms.");
-        } catch (e) {
-            console.error("Échec du scan :", e);
-        }
-    }
-
+    // --- API ---
     async function generateImage() {
-        const apiKey = document.getElementById('apiKey').value.trim();
-        const promptText = document.getElementById('promptComplet').value.trim();
-        const selectedRatio = document.getElementById('aspectRatioSelect').value;
-        const resultArea = document.querySelector('.result-area');
+        const key = document.getElementById('apiKey').value.trim();
+        const prompt = document.getElementById('promptComplet').value.trim();
+        const model = document.getElementById('modelSelect').value;
+        const ratio = document.getElementById('aspectRatioSelect').value;
+        const area = document.getElementById('resultArea');
 
-        if (!apiKey || !promptText) return alert("Manque de data pour générer.");
-        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Appel API Nano Banana 2... ⏳</div>`;
+        if (!key || !prompt) return alert("Data manquante (Clé ou Prompt)");
+        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Génération...</div>';
 
         try {
-            // Test avec l'endpoint v1 au lieu de v1beta
-            // const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
-            
-            // Teste avec Gemini 2.5 Flash pour voir si le 404 disparait (ça donnera une erreur de méthode, mais pas un 404)
-            const modelName = "gemini-2.5-flash"; 
-            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-
-            const response = await fetch(googleUrl, {
+            // On tente l'endpoint Image, sinon on fallback sur un message clair
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
+            const res = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    instances: [ { prompt: promptText } ],
-                    parameters: {
-                        sampleCount: 1,
-                        aspectRatio: selectedRatio,
-                        outputMimeType: "image/jpeg"
-                    }
-                })
+                body: JSON.stringify({ instances: [{prompt}], parameters: {sampleCount:1, aspectRatio:ratio} })
             });
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(`DEBUG HTTP ${response.status}\nURL: ${googleUrl}\nData: ${JSON.stringify(errData, null, 2)}`);
-            }
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || "Erreur Inconnue");
 
-            const data = await response.json();
-            const base64Image = data.generatedImages?.[0]?.image?.imageBytes;
-
-            if (base64Image) {
-                resultArea.innerHTML = `<img src="data:image/jpeg;base64,${base64Image}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;">
-                                       <button class="btn-generate" onclick="window.generateImage()">Regénérer ✨</button>`;
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes;
+            if (b64) {
+                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px">`;
             } else {
-                throw new Error("200 OK mais pas de Base64. Check la réponse brute.");
+                area.innerHTML = `<div style="color:orange;font-size:12px;padding:10px">Réponse reçue, mais pas d'image. Ce modèle (${model}) ne supporte probablement pas le Text-to-Image.</div>`;
             }
-        } catch (error) {
-            resultArea.innerHTML = `<div style="color:#ff4d4d; padding:20px; background:#2b0000; font-family:monospace; font-size:12px; text-align:left; overflow:auto; height:100%;">
-                <h3 style="margin-top:0;">❌ Erreur API (404 = URL/Modèle Invalide)</h3>
-                <pre>${error.message}</pre>
-            </div>
-            <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
+        } catch (e) {
+            area.innerHTML = `<div style="color:red;font-size:12px;padding:10px;background:#200;width:100%">Erreur: ${e.message}</div>`;
         }
     }
 
-    // --- UTILS ---
-    window.manualLoad = async () => {
-        const path = document.getElementById('ymlPath').value.trim();
-        if (path) await loadYaml(path);
+    // --- EXPORTS ---
+    window.processPrompt = processPrompt;
+    window.insertTag = (t) => {
+        const a = document.getElementById('promptResume');
+        a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
+        processPrompt();
     };
-    window.insertTag = insertTag;
-    window.updateVar = updateVar;
-    window.generateImage = generateImage;
-    window.checkModels = checkModels;
+    window.updateVar = (n, v) => { currentVariables[n] = v; processPrompt(); };
     window.copyPrompt = () => {
-        const t = document.getElementById('promptComplet');
-        t.select();
-        document.execCommand('copy');
-        alert("Copié !");
+        const c = document.getElementById('promptComplet');
+        c.select(); document.execCommand('copy'); alert("Copié!");
     };
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
-    window.clearAll = () => {
-        document.getElementById('promptResume').value = '';
-        currentVariables = {};
-        processPrompt();
+    window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
+    window.manualLoad = () => loadYaml(document.getElementById('ymlPath').value);
+    window.generateImage = generateImage;
+    window.checkModels = async () => {
+        const k = document.getElementById('apiKey').value;
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
+        const d = await r.json();
+        console.log("Modèles:", d.models);
+        alert("Check la console F12");
     };
 
     window.onload = () => {
         loadYaml();
-        const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) document.getElementById('apiKey').value = savedKey;
+        const k = localStorage.getItem('gemini_api_key');
+        if (k) document.getElementById('apiKey').value = k;
+        
+        // Sync scroll
+        const pr = document.getElementById('promptResume');
+        const hl = document.getElementById('highlightLayer');
+        pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
     };
-
-    window.saveApiKey = (val) => localStorage.setItem('gemini_api_key', val);
-
-    document.getElementById('promptResume').addEventListener('scroll', function() {
-        document.getElementById('highlightLayer').scrollTop = this.scrollTop;
-    });
 </script>
+
 </body>
 </html>
