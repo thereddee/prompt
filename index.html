@@ -141,12 +141,15 @@
 </div>
 
 <script>
-    // Ajoute cette ligne tout en haut de ton bloc <script>
+    // 1. L'import doit rester tout en haut
     import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
-    let lastRenderedVars = ""; // Garde en mémoire les variables actuellement affichées
-    let promptDb = {}; // Dictionnaire global : { ":trigger": "replace text" }
-    let currentVariables = {}; // Stocke les valeurs tapées par l'utilisateur
-    const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933']; // Couleurs pour les tags
+
+    // 2. Tes variables globales
+    let promptDb = {};
+    let currentVariables = {};
+    let lastRenderedVars = "";
+    const colorPalette = ['#ff4d4d', '#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933'];
+    
     // --- GESTION DE LA CLÉ API ---
     function saveApiKey(val) {
         localStorage.setItem('gemini_api_key', val);
@@ -435,7 +438,20 @@ function processPrompt() {
         }
     }
 
-    // Modifier ton window.onload pour charger la clé au démarrage
+    // --- IMPORTANT : RENDRE LES FONCTIONS GLOBALES ---
+    // Comme on est dans un module, les boutons "onclick" du HTML ne trouveraient 
+    // pas tes fonctions sinon. On les "pousse" dans l'objet window.
+    window.generateImage = generateImage;
+    window.manualLoad = manualLoad;
+    window.insertTag = insertTag;
+    window.processPrompt = processPrompt;
+    window.toggleSidebar = toggleSidebar;
+    window.copyPrompt = copyPrompt;
+    window.clearAll = clearAll;
+    window.saveApiKey = saveApiKey;
+    window.updateVar = updateVar;
+
+    // Initialisation
     window.onload = () => {
         loadYaml();
         loadSavedApiKey();
