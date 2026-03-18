@@ -103,23 +103,23 @@
 </div>
 
 <script type="module">
-    // --- VARIABLES ---
+    // --- VARIABLES GLOBALES ---
     let promptDb = {};
     let currentVariables = {};
     let lastRenderedVars = "";
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- CORE FUNCTIONS ---
+    // --- CHARGEMENT YAML ---
     async function loadYaml(fileName = 'default.yml') {
         const root = document.getElementById('sidebarContent');
-        if (root) root.innerHTML = '<p>Chargement...</p>';
+        if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Chargement... 🔄</p>';
         try {
             const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error(`Fichier introuvable (${res.status})`);
             const text = await res.text();
             parseYaml(text);
         } catch (e) {
-            if (root) root.innerHTML = '<p style="color:red">Erreur YAML</p>';
+            if (root) root.innerHTML = `<p style="color:red;padding:10px;">Erreur YAML: ${e.message}</p>`;
         }
     }
 
@@ -157,22 +157,20 @@
         });
     }
 
+    // --- UI & LOGIQUE ---
     function processPrompt() {
         const text = document.getElementById('promptResume').value;
         const layer = document.getElementById('highlightLayer');
         
-        // Visual Highlight
         layer.innerHTML = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;color:${promptDb[m].color};font-weight:bold">${m}</span>` : m)
+            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;border-radius:2px;color:${promptDb[m].color}">${m}</span>` : m)
             .replace(/\n/g, '<br>') + (text.endsWith('\n') ? ' ' : '');
 
-        // Compilation
         let full = text;
         (text.match(/(:\w[\w-]*)/g) || []).forEach(t => {
             if (promptDb[t]) full = full.replace(t, promptDb[t].text.replace(/\[Use.*?\]\s*/gi, '').trim());
         });
 
-        // Vars
         const vRegex = /{{(.*?)}}/g;
         let vFound = new Set(), m;
         while ((m = vRegex.exec(full)) !== null) vFound.add(m[1]);
@@ -190,11 +188,9 @@
         const sig = Array.from(vSet).sort().join(',');
         if (lastRenderedVars === sig) return;
         lastRenderedVars = sig;
-        
         const cont = document.getElementById('variablesContainer');
         const list = document.getElementById('variablesList');
         if (vSet.size === 0) { cont.style.display = 'none'; return; }
-        
         cont.style.display = 'flex';
         list.innerHTML = '';
         vSet.forEach(v => {
@@ -206,8 +202,8 @@
         });
     }
 
-    // --- API ---
-async function generateImage() {
+    // --- API GENERATION (SANS PROXY - DIRECT HIT) ---
+    async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
         const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
@@ -216,16 +212,14 @@ async function generateImage() {
 
         if (!key || !prompt) return alert("Données manquantes : Clé ou Prompt vide.");
         
-        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Appel API en cours... ⏳</div>';
+        area.innerHTML = '<div style="color:var(--accent);animation:pulse 1s infinite">Appel API Direct... 🚀</div>';
 
         try {
-            // URL de base pour l'image
-            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${key}`;
-            
-            // On passe par le proxy pour éviter le CORS direct
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
+            // NOTE: On utilise le modèle choisi dans le dropdown
+            // Pour l'image, l'endpoint est souvent :generateImages
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
 
-            const res = await fetch(proxyUrl, {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -234,57 +228,49 @@ async function generateImage() {
                 })
             });
 
-            // --- LA PROTECTION "ANTI-JSON VIDE" ---
-            const text = await res.text(); // On lit d'abord le texte brut
+            const text = await res.text();
             let data = {};
-            
-            if (text) {
-                try {
-                    data = JSON.parse(text); // On essaie de parser si y'a du texte
-                } catch (e) {
-                    throw new Error(`Réponse non-JSON reçue : ${text.substring(0, 100)}`);
-                }
-            }
+            if (text) data = JSON.parse(text);
 
             if (!res.ok) {
-                // Si l'API renvoie une erreur, on l'affiche proprement
-                const errMsg = data.error?.message || `Erreur HTTP ${res.status}`;
-                throw new Error(errMsg);
+                throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
             }
 
-            // Extraction du Base64
             const b64 = data.generatedImages?.[0]?.image?.imageBytes;
             
             if (b64) {
-                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow: 0 4px 15px rgba(0,0,0,0.5)">`;
+                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;">`;
             } else {
-                area.innerHTML = `<div style="color:orange;font-size:12px;padding:20px;background:#211">
-                    ✅ Requête acceptée, mais aucune image retournée.<br>
-                    <strong>Détail :</strong> Le modèle ${model} n'a peut-être pas accès à la génération d'image pour ta clé.
+                area.innerHTML = `<div style="color:orange;font-size:12px;padding:20px;background:#211;border:1px solid orange;border-radius:8px;">
+                    ✅ Requête acceptée (200 OK).<br>
+                    <strong>Mais :</strong> Aucune image reçue. Le modèle <u>${model}</u> ne supporte probablement pas la génération d'image via cet endpoint.
                 </div>`;
             }
 
         } catch (e) {
-            console.error("Erreur complète :", e);
+            console.error("Erreur détaillée :", e);
+            let advice = "Vérifie que ton extension 'Allow CORS' est bien ACTIVE.";
+            if (e.message.includes("404")) advice = "Le modèle ou l'endpoint n'existe pas.";
+            
             area.innerHTML = `<div style="color:#ff4d4d;font-size:12px;padding:15px;background:#2b0000;border:1px solid #ff4d4d;border-radius:8px;text-align:left;overflow:auto;height:100%">
-                <h3 style="margin-top:0">❌ Erreur de Génération</h3>
+                <h3 style="margin-top:0">❌ Erreur réseau / API</h3>
                 <pre style="white-space:pre-wrap;font-family:monospace">${e.message}</pre>
-                <p style="font-size:10px;color:#aaa;margin-top:10px">Note : Si c'est un 404, l'endpoint Gemini 3 n'est peut-être pas encore ouvert sur ta région.</p>
+                <p style="font-size:11px;color:#aaa;margin-top:10px">💡 <strong>Conseil :</strong> ${advice}</p>
             </div>`;
         }
     }
 
-    // --- EXPORTS ---
-    window.processPrompt = processPrompt;
+    // --- EXPORTS & INITIALISATION ---
     window.insertTag = (t) => {
         const a = document.getElementById('promptResume');
         a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
         processPrompt();
     };
+    window.processPrompt = processPrompt;
     window.updateVar = (n, v) => { currentVariables[n] = v; processPrompt(); };
     window.copyPrompt = () => {
         const c = document.getElementById('promptComplet');
-        c.select(); document.execCommand('copy'); alert("Copié!");
+        c.select(); document.execCommand('copy'); alert("Copié !");
     };
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
     window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
@@ -292,18 +278,18 @@ async function generateImage() {
     window.generateImage = generateImage;
     window.checkModels = async () => {
         const k = document.getElementById('apiKey').value;
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
-        const d = await r.json();
-        console.log("Modèles:", d.models);
-        alert("Check la console F12");
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${k}`);
+            const d = await r.json();
+            console.log("Modèles dispos:", d.models);
+            alert("Liste reçue. Regarde la console (F12).");
+        } catch(e) { alert("Erreur scan: " + e.message); }
     };
 
     window.onload = () => {
         loadYaml();
         const k = localStorage.getItem('gemini_api_key');
         if (k) document.getElementById('apiKey').value = k;
-        
-        // Sync scroll
         const pr = document.getElementById('promptResume');
         const hl = document.getElementById('highlightLayer');
         pr.addEventListener('scroll', () => hl.scrollTop = pr.scrollTop);
