@@ -359,84 +359,79 @@ function processPrompt() {
     });
 
     // --- CONNEXION API NANO BANANA 2 (Gemini 3 Flash Image) ---
-    async function generateImage() {
+   async function generateImage() {
         const apiKey = document.getElementById('apiKey').value.trim();
         const promptText = document.getElementById('promptComplet').value.trim();
-        const selectedRatio = document.getElementById('aspectRatioSelect').value; // On récupère le ratio
+        const selectedRatio = document.getElementById('aspectRatioSelect').value;
         const resultArea = document.querySelector('.result-area');
 
-        // Validation de base
-        if (!apiKey) {
-            alert("Ouin, ça va te prendre ta clé API dans le champ en haut pour que ça marche !");
-            return;
-        }
-        if (!promptText) {
-            alert("Ton prompt est vide. Coche des tags ou écris tes instructions d'abord.");
+        if (!apiKey || !promptText) {
+            alert("Clé API ou Prompt manquant !");
             return;
         }
 
-        // On met à jour le UI pour montrer que ça travaille
-        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Génération avec Nano Banana 2 en cours... ⏳</div>`;
+        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Connexion à Nano Banana 2... ⏳</div>`;
 
         try {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            // Changement ici : On utilise l'endpoint v1 pour plus de stabilité
+            const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash-image:generateContent?key=${apiKey}`;
             
             const response = await fetch(endpoint, {
                 method: 'POST',
+                mode: 'cors', // Force le mode CORS
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    instances: [
-                        { prompt: promptText }
-                    ],
-                    parameters: {
-                        sampleCount: 1, 
-                        aspectRatio: selectedRatio // La variable est injectée ici !
+                    contents: [{
+                        parts: [{ text: promptText }]
+                    }],
+                    generationConfig: {
+                        // Paramètres spécifiques à l'image (si supportés par l'endpoint direct)
+                        "aspectRatio": selectedRatio,
+                        "numberOfImages": 1
                     }
                 })
             });
 
             if (!response.ok) {
-                // On essaie de lire le corps de l'erreur envoyé par l'API
-                let errorDetail = "";
-                try {
-                    const errData = await response.json();
-                    // On formate le JSON d'erreur pour qu'il soit lisible
-                    errorDetail = JSON.stringify(errData, null, 2); 
-                } catch(e) {
-                    // Si ce n'est pas du JSON, on prend le texte brut
-                    errorDetail = await response.text(); 
-                }
-                
-                // On lance une erreur qui contient le statut HTTP ET le détail
-                throw new Error(`HTTP ${response.status} (${response.statusText})\n\nDétails de l'API:\n${errorDetail}`);
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`Erreur HTTP ${response.status}\n${JSON.stringify(errData, null, 2)}`);
             }
 
             const data = await response.json();
             
-            // Note: Ajuste ces chemins selon la doc exacte de l'API Gemini que tu utilises
-            const base64Image = data.predictions?.[0]?.bytesBase64 || data.generatedImages?.[0]?.image?.imageBytes;
+            // Logique de récupération de l'image (selon le retour de Gemini 3 Flash)
+            const base64Image = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || 
+                               data.predictions?.[0]?.bytesBase64;
 
             if (base64Image) {
                 resultArea.innerHTML = `
-                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);" alt="Rendu Lotus de Fer">
+                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
                     <button class="btn-generate" onclick="generateImage()">Regénérer ✨</button>
                 `;
             } else {
-                throw new Error(`Code HTTP 200 OK, mais impossible de trouver l'image dans la réponse.\n\nRéponse complète:\n${JSON.stringify(data, null, 2)}`);
+                throw new Error(`Image non trouvée dans la réponse JSON.\n\nRéponse brute:\n${JSON.stringify(data, null, 2)}`);
             }
 
         } catch (error) {
-            console.error("Erreur API complète :", error);
+            console.error("DEBUG COMPLET :", error);
             
-            // Affichage de l'erreur façon "Terminal" pour débugger
+            // Si c'est un "Failed to fetch", on donne une piste sur le CORS
+            let msg = error.message;
+            if (msg === "Failed to fetch") {
+                msg = "ERREUR RÉSEAU / CORS : Le navigateur a bloqué la requête.\n\n" +
+                      "Vérifie :\n" +
+                      "1. Si ta clé API est valide.\n" +
+                      "2. Si tu as une extension (AdBlock/Privacy Badger) qui bloque Google APIs.\n" +
+                      "3. Ouvre la console (F12 -> Console) pour voir le message d'erreur rouge détaillé de Chrome.";
+            }
+
             resultArea.innerHTML = `
-                <div style="color: #ff4d4d; font-size: 0.9em; text-align: left; background: #2b0000; padding: 20px; border: 1px solid #ff4d4d; border-radius: 8px; width: 100%; height: 100%; overflow-y: auto; box-sizing: border-box; position: absolute; top: 0; left: 0;">
-                    <h3 style="margin-top: 0; border-bottom: 1px solid #ff4d4d; padding-bottom: 10px;">❌ Échec de la requête</h3>
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', monospace; line-height: 1.4; color: #ffb3b3;">${error.message}</pre>
+                <div style="color: #ff4d4d; font-size: 0.8em; text-align: left; background: #2b0000; padding: 15px; border: 1px solid #ff4d4d; border-radius: 8px; width:100%; height:100%; overflow:auto;">
+                    <pre style="white-space: pre-wrap; font-family: monospace;">${msg}</pre>
                 </div>
-                <button class="btn-generate" onclick="generateImage()" style="z-index: 10;">Réessayer ✨</button>
+                <button class="btn-generate" onclick="generateImage()">Réessayer ✨</button>
             `;
         }
     }
