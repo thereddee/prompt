@@ -49,7 +49,7 @@
         <div class="input-group">
             <label>Modèle IA</label>
             <select id="modelSelect">
-                <option value="imagen-4.0-generate-001">Imagen 4 (Le top! 🏆)</option>
+                <option value="imagen-4.0-generate-001">Imagen 4 (1 Le top! 🏆)</option>
                 <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (3.1 Flash)</option>
                 <option value="gemini-3-pro-image-preview">Nano Banana Pro (3.0 Pro)</option>
             </select>
@@ -207,71 +207,69 @@
     // --- GÉNÉRATION BLINDÉE ---
 async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
-        const prompt = document.getElementById('promptComplet').value.trim();
-        const model = document.getElementById('modelSelect').value; // Ex: imagen-4.0-generate-001
+        const promptText = document.getElementById('promptComplet').value.trim();
+        const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Richard, on a besoin de la clé et du prompt !");
+        if (!key || !promptText) return alert("Richard, ça prend du gaz dans le réservoir !");
         
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Tentative de connexion directe à ${model}... 🚀</div>`;
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Tentative de connexion directe (Imagen 4)... 🚀</div>`;
+
+        // Configuration ultra-simple pour passer sous le radar
+        const requestBody = {
+            instances: [{ prompt: promptText }],
+            parameters: { sampleCount: 1, aspectRatio: ratio }
+        };
 
         try {
-            // On utilise v1beta car tes modèles sont tous en 'preview' sur ta capture
+            // On force v1beta car c'est là que vivent les previews de ta capture
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateImages?key=${key}`;
+            
+            console.log("🚀 Envoi vers:", url);
 
             const res = await fetch(url, {
                 method: 'POST',
-                // On garde seulement le strict minimum
-                body: JSON.stringify({
-                    instances: [{ prompt: prompt }],
-                    parameters: { 
-                        sampleCount: 1, 
-                        aspectRatio: ratio 
-                    }
-                })
+                // On NE MET PAS de headers Content-Type manuels, on laisse le fureteur faire
+                body: JSON.stringify(requestBody)
             });
 
-            // Si le fetch passe, on lit la réponse
-            const text = await res.text();
-            let data = {};
-            try { data = JSON.parse(text); } catch(e) { 
-                throw new Error("Réponse corrompue ou vide. Check ta console F12."); 
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `HTTP ${res.status}`);
             }
 
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
-
+            const data = await res.json();
             const b64 = data.generatedImages?.[0]?.image?.imageBytes || data.predictions?.[0]?.bytesBase64;
 
             if (b64) {
                 area.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
-                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border: 1px solid var(--accent);">
-                        <div style="margin-top:10px;">
-                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                            <a href="data:image/jpeg;base64,${b64}" download="render.jpg" style="background:#444; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; margin-left:10px;">💾</a>
-                        </div>
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%;">
+                        <img src="data:image/jpeg;base64,${b64}" style="max-width:100%; max-height:80%; border-radius:8px; border:2px solid var(--accent);">
+                        <button class="btn-generate" onclick="window.generateImage()" style="position:static; margin-top:10px;">Regénérer ✨</button>
                     </div>`;
             } else {
-                area.innerHTML = `<div style="color:orange; padding:20px;">200 OK mais pas d'image. Détails: <pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                throw new Error("Réponse reçue (200), mais pas d'image. Check ta console.");
             }
 
         } catch (e) {
-            console.error("DEBUG IT:", e);
+            console.error("DEBUG COMPLET:", e);
             area.innerHTML = `
                 <div style="color:#ff4d4d; font-size:11px; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px; text-align:left; overflow:auto; height:100%">
-                    <h3 style="margin-top:0">❌ Failed to Fetch</h3>
-                    <p>Le navigateur a bloqué la requête. <b>Vérifie ces 3 points :</b></p>
-                    <ol>
-                        <li>Ton extension <b>Allow CORS</b> doit être réglée sur "ON" (souvent l'icône devient colorée).</li>
-                        <li>Dans les options de l'extension, assure-toi qu'elle autorise <code>*://*.googleapis.com/*</code>.</li>
-                        <li>Essaie de rafraîchir la page (F5) après avoir activé l'extension.</li>
-                    </ol>
-                    <pre style="font-size:9px; color:#888;">${e.message}</pre>
+                    <h3 style="margin-top:0">❌ Échec du Fetch</h3>
+                    <p>Le fureteur bloque encore. Essaie ceci :</p>
+                    <ul style="margin-left: -20px;">
+                        <li>Vérifie que l'extension CORS est <b>vraiment allumée</b> (icône colorée).</li>
+                        <li>Dans les réglages de l'extension, active <b>"Intercept OPTIONS requests"</b>.</li>
+                        <li>Assure-toi que tu n'as pas un VPN ou un Firewall qui bloque Google APIs.</li>
+                    </ul>
+                    <pre style="font-size:10px; color:#888;">Détail: ${e.message}</pre>
                 </div>
                 <button class="btn-generate" onclick="window.generateImage()">Réessayer ✨</button>`;
         }
-    }
+
+
+
     // --- EXPORTS & INIT ---
     window.insertTag = (t) => {
         const a = document.getElementById('promptResume');
