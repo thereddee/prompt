@@ -141,6 +141,8 @@
 </div>
 
 <script>
+    // Ajoute cette ligne tout en haut de ton bloc <script>
+    import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai";
     let lastRenderedVars = ""; // Garde en mémoire les variables actuellement affichées
     let promptDb = {}; // Dictionnaire global : { ":trigger": "replace text" }
     let currentVariables = {}; // Stocke les valeurs tapées par l'utilisateur
@@ -372,7 +374,7 @@ function processPrompt() {
         document.getElementById('highlightLayer').scrollTop = this.scrollTop;
     });
 
-// --- CONNEXION API NANO BANANA 2 ---
+    // --- CONNEXION API NANO BANANA 2 ---
     async function generateImage() {
         const apiKey = document.getElementById('apiKey').value.trim();
         const promptText = document.getElementById('promptComplet').value.trim();
@@ -384,59 +386,49 @@ function processPrompt() {
             return;
         }
 
-        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Passage par le Proxy CORS... ⏳</div>`;
+        resultArea.innerHTML = `<div class="result-placeholder" style="color: var(--accent); animation: pulse 1.5s infinite;">Appel au SDK Gemini 3... ⏳</div>`;
 
         try {
-            // L'URL de l'API Google
-            const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-image:generateImages?key=${apiKey}`;
+            // Initialisation du SDK
+            const genAI = new GoogleGenerativeAI(apiKey);
             
-            // On enveloppe l'URL dans un proxy pour contourner le blocage du navigateur
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
-            
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    instances: [
-                        { prompt: promptText }
-                    ],
-                    parameters: {
-                        sampleCount: 1,
-                        aspectRatio: selectedRatio,
-                        outputMimeType: "image/jpeg"
-                    }
-                })
+            // On spécifie le modèle Nano Banana 2 (Gemini 3 Flash Image)
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-image" });
+
+            // Configuration de la génération
+            const result = await model.generateImages({
+                prompt: promptText,
+                numberOfImages: 1,
+                aspectRatio: selectedRatio,
+                outputMimeType: "image/jpeg",
             });
 
-            if (!response.ok) {
-                let errorBody;
-                try { errorBody = await response.json(); } catch(e) { errorBody = await response.text(); }
-                throw new Error(`HTTP ${response.status}\n\n${typeof errorBody === 'object' ? JSON.stringify(errorBody, null, 2) : errorBody}`);
-            }
-
-            const data = await response.json();
-            
-            // Extraction du Base64 (Format Gemini 3 Flash Image)
-            const base64Image = data.generatedImages?.[0]?.image?.imageBytes;
+            // Le SDK gère la réponse pour nous
+            const base64Image = result.generatedImages[0].image.imageBytes;
 
             if (base64Image) {
                 resultArea.innerHTML = `
-                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);">
+                    <img src="data:image/jpeg;base64,${base64Image}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
                     <button class="btn-generate" onclick="generateImage()">Regénérer ✨</button>
                 `;
             } else {
-                throw new Error(`Image non trouvée. Réponse brute :\n${JSON.stringify(data, null, 2)}`);
+                throw new Error("Image non trouvée dans la réponse du SDK.");
             }
 
         } catch (error) {
-            console.error("DEBUG PROXY :", error);
+            console.error("DEBUG SDK :", error);
+            
+            let errorMsg = error.message;
+            // Si même le SDK se fait bloquer par le CORS du navigateur
+            if (errorMsg.includes("fetch")) {
+                errorMsg = "BLOCAGE NAVIGATEUR (CORS) : \nGoogle refuse que ton navigateur lui parle directement.\n\n" +
+                        "👉 SOLUTION : Installe l'extension 'CORS Unblock' sur Chrome et active-la pour ce site. C'est la seule façon de contourner ça sur un site statique comme GitHub Pages.";
+            }
+
             resultArea.innerHTML = `
                 <div style="color: #ff4d4d; font-size: 0.85em; text-align: left; background: #2b0000; padding: 20px; border: 1px solid #ff4d4d; border-radius: 8px; width:100%; height:100%; overflow:auto; box-sizing: border-box;">
-                    <h3 style="margin-top:0;">❌ Erreur CORS ou API</h3>
-                    <pre style="white-space: pre-wrap; font-family: 'Consolas', monospace; color: #ffb3b3;">${error.message}</pre>
-                    <p style="margin-top:10px; font-size: 0.9em; color: #aaa;">Si l'erreur persiste, essaie d'activer une extension "Allow CORS" dans ton navigateur.</p>
+                    <h3 style="margin-top:0;">❌ Erreur Technique</h3>
+                    <pre style="white-space: pre-wrap; font-family: 'Consolas', monospace; color: #ffb3b3;">${errorMsg}</pre>
                 </div>
                 <button class="btn-generate" onclick="generateImage()" style="z-index: 10;">Réessayer ✨</button>
             `;
