@@ -211,15 +211,15 @@
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !prompt) return alert("Besoin d'une clé et d'un prompt !");
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Requête vers ${model}... 🚀</div>`;
+        if (!key || !prompt) return alert("Richard, ça prend du gaz dans le réservoir (Clé + Prompt) !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Requête envoyée à ${model}... 🚀</div>`;
 
         try {
-            const isImageModel = model.includes('imagen') || model.includes('image');
+            // SI tu as Imagen-3 ou Gemini-3-Image, l'URL change
+            const isImageModel = model.toLowerCase().includes('imagen') || model.toLowerCase().includes('image');
             const method = isImageModel ? 'generateImages' : 'generateContent';
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
 
-            // On ajuste le payload selon le modèle
             const payload = isImageModel ? {
                 instances: [{ prompt: prompt }],
                 parameters: { sampleCount: 1, aspectRatio: ratio }
@@ -233,27 +233,31 @@
                 body: JSON.stringify(payload)
             });
 
-            const text = await res.text();
-            let data = {};
-            if (text) data = JSON.parse(text);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
 
-            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+            // 1. On cherche des pixels (Base64)
+            const b64 = data.generatedImages?.[0]?.image?.imageBytes || 
+                        data.predictions?.[0]?.bytesBase64;
 
-            // Rendu selon le type de réponse
-            if (isImageModel && data.generatedImages) {
-                const b64 = data.generatedImages[0].image.imageBytes;
-                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;">`;
-            } else {
-                // Si c'est un modèle de texte (ou qu'on a juste du texte)
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data, null, 2);
-                area.innerHTML = `<div style="color:#aaa;font-size:12px;text-align:left;padding:15px;overflow:auto;height:100%;white-space:pre-wrap;">${aiText}</div>`;
+            if (b64) {
+                area.innerHTML = `<img src="data:image/jpeg;base64,${b64}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                                 <button class="btn-generate" onclick="window.generateImage()">Regénérer ✨</button>`;
+            } 
+            // 2. Sinon, on affiche le texte (pour le debug ou le chat)
+            else {
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Réponse reçue, mais format inconnu.";
+                area.innerHTML = `<div style="color:#aaa;font-size:13px;text-align:left;padding:20px;overflow:auto;height:100%;background:#0a0a0a;border:1px solid #333;border-radius:8px;white-space:pre-wrap;">
+                    <strong style="color:var(--accent)">🤖 Réponse du modèle :</strong>\n\n${aiText}\n\n
+                    <p style="color:#666;font-size:11px;border-top:1px solid #222;padding-top:10px;">
+                    Note: Le modèle <b>${model}</b> n'a pas retourné d'image. Pour générer des visuels, assure-toi d'utiliser <b>imagen-3</b> ou <b>gemini-3-flash-image</b>.
+                    </p>
+                </div>`;
             }
-
         } catch (e) {
             area.innerHTML = `<div style="color:#ff4d4d;font-size:11px;padding:15px;background:#2b0000;border:1px solid #ff4d4d;border-radius:8px;text-align:left;overflow:auto;height:100%">
                 <h3 style="margin-top:0">❌ Erreur API</h3>
                 <pre style="white-space:pre-wrap;">${e.message}</pre>
-                <p style="color:#888;margin-top:10px">Si tu vois 'Unknown name instances', c'est que tu essaies d'envoyer un format image à un modèle qui attend du texte (ex: Gemini Flash).</p>
             </div>`;
         }
     }
