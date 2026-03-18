@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Studio de Génération V0.1</title>
+    <title>Studio de Génération V0.3</title>
     <style>
         :root { --bg-main: #121212; --bg-panel: #1e1e1e; --border: #333; --accent: #00d4ff; --text: #e0e0e0; --tag-color: #ff4d4d; }
         * { box-sizing: border-box; }
@@ -185,70 +185,132 @@
         <summary style="border-left: 4px solid #ffcc00;">🖼️ RÉFÉRENCE VISUELLE</summary>
         <div class="details-content">
             <div id="selectedRefDisplay" style="margin-bottom:15px; text-align:center; display:none; background: rgba(0,212,255,0.05); border: 1px dashed var(--accent); padding: 10px; border-radius: 8px;">
-                <p style="font-size:10px; color:var(--accent); margin-top:0; font-weight:bold;">Référence chargée :</p>
-                <img id="refPreview" src="" style="width:100px; height:100px; object-fit:cover; border:2px solid var(--accent); border-radius:4px;">
-                <p id="refName" style="font-size:9px; color:#888; margin: 5px 0; overflow:hidden;"></p>
-                <button onclick="window.clearActiveReference()" style="background:#333; color:#ff4d4d; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">[ Retirer ]</button>
+                <p style="font-size:10px; color:var(--accent); margin-top:0; font-weight:bold;">Référence active :</p>
+                <img id="refPreview" src="" style="width:100px; height:100px; object-fit:cover; border:2px solid var(--accent); border-radius:4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                <p id="refName" style="font-size:9px; color:#888; margin: 5px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></p>
+                <button onclick="window.clearActiveReference()" style="display:block; margin:5px auto; font-size:10px; background:#333; border:none; color:#ff4d4d; cursor:pointer; padding:4px 8px; border-radius:4px; font-weight:bold;">[ Retirer l'image ]</button>
             </div>
 
             <input type="file" id="localRefInput" style="display:none;" accept="image/*" onchange="window.handleLocalRef(this)">
-            <button class="trigger-btn" onclick="document.getElementById('localRefInput').click()" style="border: 1px solid #444; margin-bottom:10px;">
-                <strong>📤 Upload local</strong>
-                <small>Image de ton PC</small>
+            <button class="trigger-btn" onclick="document.getElementById('localRefInput').click()" style="border: 1px solid #444; margin-bottom: 10px;">
+                📤 Upload local (Image du PC)
             </button>
         </div>
     </details>
 
     <hr style="border:0; border-top:1px solid #222; margin:0;">
 
+    <details id="internalPresetsArea" open>
+        <summary style="border-left: 4px solid #bf80ff;">⚡ PRESETS RAPIDES</summary>
+        <div id="internalPresetsList" class="details-content">
+            </div>
+    </details>
+
+    <hr style="border:0; border-top:1px solid #222; margin:0;">
+
     <div class="sidebar-content" id="sidebarContent">
-        <p style="text-align:center; padding:20px; color:#666;">Chargement...</p>
+        <p style="text-align:center; padding:20px; color:#666;">Sync...</p>
     </div>
 
-    <div style="padding:10px; border-top:1px solid #222; margin-top:auto;">
-        <button class="btn-generate" style="font-size:10px; opacity:0.5; width:100%; position:static;" onclick="window.debugListModels()">
-            🐞 Lister Modèles (Debug)
+    <div style="padding: 10px; border-top: 1px solid #222; margin-top: auto;">
+        <button class="btn-generate" style="font-size: 10px; opacity: 0.5; width: 100%; position: static;" onclick="window.debugListModels()">
+            🐞 Lister Modèles (v1beta)
         </button>
     </div>
 </div>
 
 <script type="module">
+    // --- VARIABLES GLOBALES ET CONFIGURATION ---
     let promptDb = {};
     let currentVariables = {};
     let lastRenderedVars = "";
-    let currentReferenceBase64 = null; // Stocke l'image de référence
+    let currentReferenceBase64 = null; // Stocke l'image de référence active
 
-    // --- NOUVEAU : DB ET CONFIGURATION D'HISTORIQUE ---
-    let historyDb = []; // Notre "garde-manger" en mémoire
-    const MAX_HISTORY = 10; // Nombre max d'images à garder
-    let activeHistoryIndex = -1; // Index de l'image affichée depuis l'historique
+    // Configuration de session (Monitoring)
+    let sessionTotalCost = 0;
+    let sessionImageCount = 0;
 
     const colorPalette = ['#00d4ff', '#ffcc00', '#bf80ff', '#00ffcc', '#ff9933', '#ff4d4d'];
 
-    // --- PARSING YAML (Ligne par Ligne) ---
+    // --- NOUVEAU : TES PRESETS INTERNES (Configure ça ici !) ---
+    // En tant qu'IT, c'est ton "config file" interne pour aller vite.
+    const INTERNAL_PRESETS = {
+        ":comicrealistic": "rpgcomic masterpiece cinematic realism, intricate details, highly detailed, sharp focus, vibrant colors, 8k resolution, Unreal Engine 5 render aesthetic.",
+        ":darkfantasyrpg": "artstyle: gritty dark fantasy concept art, Elden Ring aesthetic. Muted colors, heavy shadows, intricate armor details, ominous lighting, painterly texture.",
+        ":sketch": "artstyle: rough pencil sketch on aged parchment, monochrome. Dynamic lines, cross-hatching shadows, incomplete details, storyboard feel."
+    };
+
+    // Coûts par modèle (Économie)
+    const COSTS = {
+        "gemini-2.5-flash-image": { input: 0.10 / 1000000, output: 0.40 / 1000000, fixed: 0.015 }, 
+        "gemini-3.1-flash-image-preview": { input: 0.10 / 1000000, output: 0.40 / 1000000, fixed: 0.02 },
+        "imagen-4.0-fast-generate-001": { fixed: 0.02 },
+        "default": { input: 0.10 / 1000000, output: 0.40 / 1000000, fixed: 0.01 }
+    };
+
+    // --- PARSING YAML & PRESETS (Ligne par Ligne) ---
     async function loadYaml(fileName = 'default.yml') {
         const root = document.getElementById('sidebarContent');
         if (root) root.innerHTML = '<p style="text-align:center;color:#888;">Sync... 🔄</p>';
         try {
             const res = await fetch(`${fileName}?t=${new Date().getTime()}`);
-            if (!res.ok) throw new Error(`Fichier introuvable (${res.status})`);
+            if (!res.ok) throw new Error(`Fichier YAML introuvable (${res.status})`);
             const text = await res.text();
+            
+            // On clear la DB avant de parser
+            promptDb = {}; 
+            
+            // 1. Charger d'abord les presets internes
+            loadInternalPresets();
+            
+            // 2. Parser le YAML externe
             parseYamlLineByLine(text);
         } catch (e) {
-            root.innerHTML = `<p style="color:red;padding:10px;">❌ YAML Error</p>`;
+            if (root) root.innerHTML = `<p style="color:red;padding:10px;">❌ YAML Error</p>`;
+            // Fallback: charger les presets internes quand même
+            loadInternalPresets();
         }
     }
 
+    // Fonction pour peupler la zone des presets internes (couleur violette)
+    function loadInternalPresets() {
+        const list = document.getElementById('internalPresetsList');
+        if (!list) return;
+        list.innerHTML = ''; // Clear
+
+        for (const trigger in INTERNAL_PRESETS) {
+            const replaceText = INTERNAL_PRESETS[trigger];
+            // On utilise la couleur violette (#bf80ff) pour les différencier
+            promptDb[trigger] = { text: replaceText, color: '#bf80ff', image: null };
+            
+            const btn = document.createElement('button');
+            btn.className = 'trigger-btn';
+            btn.innerHTML = `
+                <div style="text-align:left;">
+                    <strong style="color:#bf80ff;">${trigger}</strong>
+                    <small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${replaceText}</small>
+                </div>
+            `;
+            btn.onclick = () => window.insertTag(trigger);
+            list.appendChild(btn);
+        }
+    }
+
+    // Parseur stable ligne par ligne pour les catégories externes
     function parseYamlLineByLine(content) {
         const root = document.getElementById('sidebarContent');
         root.innerHTML = '';
         const lines = content.split('\n');
         
         let currentDetails = null, contentDiv = null, catIdx = 0;
-        promptDb = {}; 
+        
+        // Regex strictes
+        const regexImage = /image:\s*["']?([\s\S]*?)["']?(?=\n|$)/;
+        const regexTriggerReplace = /trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n|$)|\|([\s\S]*?)(?=\n|$))/;
 
         lines.forEach((line, i) => {
             const trimmed = line.trim();
+            
             if (trimmed.startsWith('###')) {
                 currentDetails = document.createElement('details');
                 const summary = document.createElement('summary');
@@ -263,6 +325,7 @@
             }
 
             if (trimmed.startsWith('- trigger:')) {
+                // Isolation du bloc
                 let lookAheadIndex = i + 1;
                 let itemBlock = [line];
                 while (lookAheadIndex < lines.length && 
@@ -272,22 +335,24 @@
                     lookAheadIndex++;
                 }
                 const segment = itemBlock.join('\n');
-                const matchTR = segment.match(/trigger:\s*["']?(:[\w-]+)["']?\s*replace:\s*(?:["']?([\s\S]*?)["']?(?=\n|$)|\|([\s\S]*?)(?=\n|$))/);
-                const matchImg = segment.match(/image:\s*["']?([\s\S]*?)["']?(?=\n|$)/);
+                
+                const matchTR = segment.match(regexTriggerReplace);
+                const matchImg = segment.match(regexImage);
 
                 if (matchTR) {
                     const trig = matchTR[1];
-                    const repl = (matchTR[2] || matchTR[3] || "").trim();
+                    const repl = (matchTR[2] || matchTR[3] || "").trim().replace(/\s+/g, ' ');
                     const imgPath = matchImg ? matchImg[1] : null;
+
                     promptDb[trig] = { text: repl, color: colorPalette[(catIdx-1)%6] || '#888', image: imgPath };
                     
                     const btn = document.createElement('button');
                     btn.className = 'trigger-btn';
                     
-                    btn.innerHTML = imgPath ? `
+                    let inner = imgPath ? `
                         <div style="display:flex; align-items:center;">
-                            <img src="${imgPath}" style="width:35px;height:35px;object-fit:cover;border-radius:4px;margin-right:8px;border:1px solid #333;">
-                            <div style="flex:1;text-align:left;">
+                            <img src="${imgPath}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;border:1px solid #333;">
+                            <div style="flex:1; text-align:left;">
                                 <strong style="color:${promptDb[trig].color}">${trig}</strong>
                                 <small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">${repl}</small>
                             </div>
@@ -297,6 +362,7 @@
                             <small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${repl}</small>
                         </div>`;
                     
+                    btn.innerHTML = inner;
                     btn.onclick = () => {
                         window.insertTag(trig);
                         if (imgPath) window.loadReferenceFromUrl(imgPath);
@@ -307,7 +373,7 @@
         });
     }
 
-    // --- GESTION DES RÉFÉRENCES VISUELLES (Stable) ---
+    // --- GESTION DES RÉFÉRENCES (Multimodal) ---
     window.loadReferenceFromUrl = async (url) => {
         try {
             const res = await fetch(url);
@@ -341,23 +407,20 @@
         document.getElementById('selectedRefDisplay').style.display = 'none';
     };
 
-    // --- LOGIQUE DE PROMPT (Couleurs & Variables) ---
+    // --- UI & LOGIQUE DE PROMPT ---
     window.processPrompt = () => {
         const text = document.getElementById('promptResume').value;
         const layer = document.getElementById('highlightLayer');
         
-        // Couleurs
         layer.innerHTML = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;color:${promptDb[m].color}">${m}</span>` : m)
+            .replace(/(:\w[\w-]*)/g, m => promptDb[m] ? `<span style="background:${promptDb[m].color}40;border-radius:2px;color:${promptDb[m].color}">${m}</span>` : m)
             .replace(/\n/g, '<br>') + (text.endsWith('\n') ? ' ' : '');
 
-        // Compilation (Texte)
         let full = text;
         (text.match(/(:\w[\w-]*)/g) || []).forEach(t => {
-            if (promptDb[t]) full = full.replace(t, promptDb[t].text.replace(/\[Use.*?\]\s*/gi, '').trim());
+            if (promptDb[t]) full = full.replace(t, promptDb[t].text);
         });
 
-        // Compilation (Variables) -> Simple et robuste
         const vRegex = /{{(.*?)}}/g;
         let vFound = new Set(), m;
         while ((m = vRegex.exec(full)) !== null) vFound.add(m[1]);
@@ -389,105 +452,39 @@
         });
     }
 
-    window.updateVar = (n, v) => { currentVariables[n] = v; window.processPrompt(); };
-    window.insertTag = (t) => {
-        const a = document.getElementById('promptResume');
-        a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
-        window.processPrompt();
-    };
-
-    // --- NOUVEAU : FONCTIONS LOGIQUES D'HISTORIQUE ---
-    function addToHistory(b64, mime, promptComplet, promptResume) {
-        // Création de l'objet d'historique (Senior Style)
-        const historyItem = {
-            id: Date.now(),
-            b64: b64,
-            mime: mime,
-            promptComplet: promptComplet,
-            promptResume: promptResume,
-            timeStamp: new Date().toLocaleTimeString()
-        };
-        
-        // On l'ajoute au DÉBUT de l'array
-        historyDb.unshift(historyItem);
-        
-        // On coupe si on dépasse la limite
-        if (historyDb.length > MAX_HISTORY) historyDb.pop();
-        
-        // On réinitialise l'index actif car on vient d'ajouter une nouvelle image
-        activeHistoryIndex = -1; 
-        
-        // On met à jour l'interface
-        renderHistoryArea();
+    // Fonction de monitoring pour Obsidian
+    function renderStatsBlock(model, usage) {
+        if (!usage) return "";
+        const config = COSTS[model] || COSTS["default"];
+        let tokenCost = (usage.promptTokenCount * (config.input || 0)) + (usage.candidatesTokenCount * (config.output || 0));
+        let generationCost = tokenCost + (config.fixed || 0);
+        sessionTotalCost += generationCost;
+        sessionImageCount++;
+        return `
+<div class="stats-block" style="margin-top:10px; background:#111; border:1px solid #333; border-radius:4px; padding:8px; font-family:monospace; font-size:10px; color:#00ffcc; text-align:left; width: 100%;">
+<pre style="margin:0;">
+\`\`\`stat-block
+Model: ${model} / Total Tokens: ${usage.totalTokenCount}
+Est. Cost: $${generationCost.toFixed(4)}
+---
+Session: ${sessionImageCount} Imgs / Total spent: $${sessionTotalCost.toFixed(4)}
+\`\`\`
+</pre>
+</div>`;
     }
 
-    function renderHistoryArea() {
-        const strip = document.getElementById('historyStrip');
-        const container = document.getElementById('historyContainer');
-        
-        if (historyDb.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-        
-        container.style.display = 'block';
-        strip.innerHTML = ''; // Clear previous thumbs
-        
-        historyDb.forEach((item, index) => {
-            const thumbWrapper = document.createElement('div');
-            thumbWrapper.className = `history-thumb-wrapper ${index === activeHistoryIndex ? 'active' : ''}`;
-            thumbWrapper.title = item.promptResume.substring(0, 100) + '...'; // Tooltip
-            
-            thumbWrapper.innerHTML = `
-                <img src="data:${item.mime};base64,${item.b64}" class="history-thumb">
-                <span class="history-number">#${historyDb.length - index}</span>
-            `;
-            
-            thumbWrapper.onclick = () => window.loadHistoryImage(index);
-            strip.appendChild(thumbWrapper);
-        });
-    }
-
-    window.loadHistoryImage = (index) => {
-        activeHistoryIndex = index;
-        const item = historyDb[index];
-        
-        // On met à jour la zone de résultat principal
-        const area = document.getElementById('resultArea');
-        renderImageResult(area, item.b64, item.mime);
-        
-        // --- UX CRUCIAL : On recharge les prompts historiques ---
-        // 1. On recharge le prompt complet pour la copie/lecture
-        document.getElementById('promptComplet').value = item.promptComplet;
-        
-        // 2. On recharge le prompt résumé pour la modification/régénération
-        const promptResumeField = document.getElementById('promptResume');
-        promptResumeField.value = item.promptResume;
-        
-        // 3. On relance le processPrompt pour mettre à jour le HighlightLayer et les couleurs
-        window.processPrompt();
-        
-        // On met à jour la galerie pour montrer quel thumb est actif
-        renderHistoryArea();
-        
-        console.log(`Richard, j'ai rechargé l'image #${historyDb.length - index} de l'historique.`);
-    }
-
-    // --- API GÉNÉRATION (Version Blindée Multimodale) ---
+    // --- API GÉNÉRATION & RENTU (Version Blindée) ---
     async function generateImage() {
         const key = document.getElementById('apiKey').value.trim();
-        const promptRawResume = document.getElementById('promptResume').value; // NOUVEAU: On sauvegarde le résumé pour l'historique
-        const promptRawComplet = document.getElementById('promptComplet').value.trim();
+        const prompt = document.getElementById('promptComplet').value.trim();
         const model = document.getElementById('modelSelect').value;
         const ratio = document.getElementById('aspectRatioSelect').value;
         const area = document.getElementById('resultArea');
 
-        if (!key || !promptRawComplet) return alert("Besoin de la clé et du prompt !");
-        
-        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1s infinite">Génération Imagen 4 en cours... ${currentReferenceBase64 ? '🖼️ Reference active' : ''}</div>`;
+        if (!key || !prompt) return alert("On manque de data (Clé + Prompt) !");
+        area.innerHTML = `<div style="color:var(--accent);animation:pulse 1.5s infinite">Extraction des pixels (${model})... 🚀</div>`;
 
         try {
-            // Imagen 4 utilise :predict, les autres :generateContent
             const isImagen = model.includes('imagen');
             const method = isImagen ? 'predict' : 'generateContent';
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}?key=${key}`;
@@ -495,102 +492,63 @@
             let body;
             if (isImagen) {
                 body = {
-                    instances: [{ 
-                        prompt: promptRawComplet,
-                        image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined
-                    }],
+                    instances: [{ prompt: prompt, image: currentReferenceBase64 ? { bytesBase64Encoded: currentReferenceBase64 } : undefined }],
                     parameters: { sampleCount: 1, aspectRatio: ratio, outputMimeType: "image/jpeg" }
                 };
             } else {
-                // Format Gemini Multimodal
-                const parts = [{ text: promptRawComplet }];
+                const parts = [{ text: prompt }];
                 if (currentReferenceBase64) parts.push({ inline_data: { mime_type: "image/png", data: currentReferenceBase64 } });
                 body = { contents: [{ parts: parts }] };
             }
 
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || `Erreur HTTP ${res.status}`);
+            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
 
-            // --- LA GRANDE CHASSE AUX PIXELS ---
+            // --- CHASSE AUX PIXELS ---
             const b64 = data.predictions?.[0]?.bytesBase64Encoded || 
-                        data.generatedImages?.[0]?.image?.imageBytes;
+                        data.generatedImages?.[0]?.image?.imageBytes || 
+                        data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
             if (b64) {
-                // On récupère le mimeType du render (PNG vs JPEG)
-                const mime = data.predictions?.[0]?.mimeType || "image/png";
+                // MimeType dynamique
+                const mime = data.predictions?.[0]?.mimeType || "image/jpeg";
+                const statsHtml = renderStatsBlock(model, data.usageMetadata);
                 
-                // --- NOUVEAU : AJOUT À L'HISTORIQUE ---
-                addToHistory(b64, mime, promptRawComplet, promptRawResume);
-                
-                // On affiche dans la zone principale
-                renderImageResult(area, b64, mime);
-                
+                // --- FIX : REMISE DU BOUTON SAUVEGARDER ---
+                area.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
+                        <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:75%; border-radius:8px; border:2px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.4);">
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
+                            <button onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; cursor:pointer;">Nouveau</button>
+                            <a href="data:${mime};base64,${b64}" download="lotus-render.jpeg" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
+                        </div>
+                        ${statsHtml}
+                    </div>`;
             } else {
-                // Fallback texte si Gemini Flash (Nano) répond
-                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de pixels.";
-                area.innerHTML = `<div style="color:#aaa; padding:20px; white-space:pre-wrap; text-align:left;">${txt}</div>`;
+                area.innerHTML = `<div style="color:#aaa; padding:20px;">Image générée, mais format non décodé.</div>`;
             }
         } catch (e) {
-            console.error("Détails IT:", e);
             area.innerHTML = `<div style="color:#ff4d4d; padding:15px; background:#2b0000; border:1px solid #ff4d4d; border-radius:8px;">${e.message}</div>`;
         }
     }
 
-    // Fonction utilitaire pour le rendu de l'image principale (pour le réutiliser)
-    function renderImageResult(area, b64, mime) {
-        area.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; height:100%; width:100%;">
-                <img src="data:${mime};base64,${b64}" style="max-width:100%; max-height:85%; border-radius:8px; border:2px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.4);">
-                <div style="margin-top:10px; display:flex; gap:10px;">
-                    <button class="btn-generate" onclick="window.generateImage()" style="position:static;">Regénérer ✨</button>
-                    <button id="btnNewImage" onclick="window.newGeneration()" style="position:static; background:#444; color:white; padding:8px 12px; border-radius:4px; border:none; font-weight:bold; font-size:12px; cursor:pointer;">Nouvelle requête</button>
-                    <a href="data:${mime};base64,${b64}" download="lotus-render.png" style="background:#333; color:white; padding:8px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:12px;">Sauvegarder 💾</a>
-                </div>
-            </div>`;
-    }
-
     // --- UTILS & DEBUG ---
-    window.newGeneration = () => {
-        document.getElementById('resultArea').innerHTML = '<div style="color:#aaa;padding:20px;text-align:center;">Prêt pour une nouvelle requête...</div>';
-        // On n'efface plus l'historique quand on fait "Nouveau"
-        window.clearActiveReference(); 
-        document.getElementById('promptResume').focus();
-        activeHistoryIndex = -1; // Plus d'image active de l'historique
-        renderHistoryArea(); // On refresh pour enlever le style active
+    window.insertTag = (t) => {
+        const a = document.getElementById('promptResume');
+        a.value += (a.value.endsWith(' ') || a.value === '' ? '' : ' ') + t + ' ';
+        window.processPrompt();
     };
-
-    window.debugListModels = async () => {
-        const k = document.getElementById('apiKey').value;
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
-        const d = await r.json();
-        console.table(d.models.map(m => ({ Nom: m.name, Methodes: m.supportedGenerationMethods.join(', ') })));
-        alert("Liste envoyée dans la console F12 !");
-    };
-
+    window.updateVar = (n, v) => { currentVariables[n] = v; window.processPrompt(); };
+    window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
+    window.generateImage = generateImage;
     window.onload = () => {
-        loadYaml();
+        loadYaml(); // Charge presets + YAML
         const k = localStorage.getItem('gemini_api_key');
         if (k) document.getElementById('apiKey').value = k;
         document.getElementById('promptResume').addEventListener('input', window.processPrompt);
-        // On initialise la galerie au démarrage (cachée)
-        renderHistoryArea();
     };
-
-    // Exports
-    window.generateImage = generateImage;
-    window.copyPrompt = () => {
-        const c = document.getElementById('promptComplet');
-        c.select(); document.execCommand('copy'); alert("Copié !");
-    };
-    window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
-    window.saveApiKey = (v) => localStorage.setItem('gemini_api_key', v);
-    window.manualLoad = () => loadYaml(document.getElementById('ymlPath').value);
 </script>
 
 </body>
