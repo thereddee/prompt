@@ -27,70 +27,20 @@ matches:
   - trigger: ":marvel"
     replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation."
 
-  ### KAE - RÉFÉRENCES
-  - trigger: ":kae-ref"
-    replace: "Character sheet of Kae"
-    image: "assets/ks.c.jpeg"
+  ### --- Iron Lotus ---
+  - trigger: ":goral"
+    replace: "A muscular orc character with glowing purple eyes and intricate, glowing magenta-purple energy veins covering his grey-green skin, as seen in the reference image. (reference: Goral-Full.png)"
+    image: "assets/Krix-Full.png"
 
+  - trigger: ":kae"
+    replace: "a beautiful 18 year old asian platinum-silver haired woman in a thick crimson cloak and dark leather adventure gear  (reference: Kae-Full.png) "
+    image: "assets/Kae-Full.png"
 
-  ### KAE - CORPS & VISAGE
-  - trigger: ":kbody"
-    replace: "[Use ks.a.jpg as the primary character reference for the body] Full body shot from head to toe. A beautiful 18-year-old young woman with an elegant, toned-fit hourglass figure, slender and agile posture."
+  - trigger: ":krix"
+    replace: "[Use ks.b.jpg for hood reference] A small, blue-skinned goblin wearing a leather aviator cap with goggles. (reference: Krix-Full.png )"
+    image: "assets/Krix-Full.png"
 
-  - trigger: ":kface"
-    replace: "[Use ka.jpg for facial structure and features] Delicate heart-shaped face with high cheekbones and fine youthful features. Radiant almond-shaped amber eyes, slightly hooded. Thick, flowing platinum-silver hair with a deep side part and cascading messy waves."
-
-  - trigger: ":kpose"
-    replace: "Pose: Standing straight and confident, facing the camera directly forward. Arms relaxed by her sides, conveying a quiet and intense presence."
-
-  - trigger: ":kaefull"
-    replace: "{{kbody}} {{kface}} {{koutfit}} {{kpose}} {{kmarvel}} {{arme}} "
-
-  ### KAE - ÉQUIPEMENT & CRISTAL
-  - trigger: ":koutfit"
-    replace: "[Use ks.a.jpg for outfit reference] Wearing a structured dark crimson leather jerkin over a long-sleeved olive-green undertunic. A single, minimalist brown leather belt with a flat circular silver buckle sits flush at the waist. Smooth, seamless brown leather arm bracers. Close-fitting dark olive-green trousers tucked perfectly into knee-high, segmented brown leather riding boots. A tattered crimson travel cloak is draped over her shoulders. A longsword in a simple brown leather scabbard hangs from her left hip."
-
-  - trigger: ":karm-crystal"
-    replace: "[Use ks.c.jpg for the crystal arms reference] Both of her arms are completely transformed into solid, glowing, translucent blue crystal. The crystalline surface is faceted like a cut gemstone, emitting a faint, pulsing magical cyan inner glow. No human skin on her arms, just pure magical blue crystal from the shoulders down."
-
-  - trigger: ":koutfit-crystal"
-    replace: "[Use ks.c.jpg for outfit reference] Wearing a structured dark crimson leather jerkin over a sleeveless olive-green undertunic, leaving her glowing crystal arms fully exposed. A single, minimalist brown leather belt with a flat circular silver buckle. Close-fitting dark olive-green trousers tucked perfectly into knee-high brown riding boots. A tattered crimson travel cloak. A translucent blue crystal short sword hangs from her left hip."
-
-  - trigger: ":khood-off"
-    replace: "[Use ks.a.jpg for hair reference] Her tattered crimson travel cloak hood is pushed DOWN, fully revealing her hair."
-
-  - trigger: ":khood-on"
-    replace: "[Use ks.b.jpg for hood reference] Wearing a crimson cowl-like hood pulled UP over her head, casting soft shadows on her forehead. A few loose strands of her platinum-silver hair peek out to frame her face."
-
-  ### KAE - EXPRESSIONS
-  - trigger: ":kexp-happy"
-    replace: "[Expression reference: Happy] Wide warm smile, eyes bright and joyful."
-
-  - trigger: ":kexp-neutral"
-    replace: "[Expression reference: Neutral] Calm and unreadable intensity, relaxed facial muscles."
-
-  - trigger: ":kexp-angry"
-    replace: "[Expression reference: Angry] Furrowed brows, sharp glaring amber eyes, tight lips."
-
-  - trigger: ":kexp-smirk"
-    replace: "[Expression reference: Smirking] Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
-
-  - trigger: ":kexp-defiant"
-    replace: "[Expression reference: Defiant] Chin slightly raised, determined and stubborn glare, tight jaw."
-
-  - trigger: ":kexp-sad"
-    replace: "[Expression reference: Sad] Downturned eyes, slight vulnerable frown, soft sorrowful gaze."
-
-  - trigger: ":kexp-blush"
-    replace: "[Expression reference: Blushing] Noticeable rosy red cheeks, flustered but gentle shy smile."
-
-  - trigger: ":kexp-closed"
-    replace: "[Expression reference: Serene] Both eyes gently closed, peaceful and calm face."
-
-  - trigger: ":kexp-wink"
-    replace: "[Expression reference: Winking] Playful wink, one eye closed, cheeky and charming smile."
-
-  ### COMPAGNONS & PNJ
+  ### --- Dragonheist ---
   - trigger: ":doggus"
     replace: "A very tall, lanky yet toned man with deep ebony skin. Narrow facial structure, high cheekbones, sharp jawline. Half-lidded eyes with a serene, confident gaze and a charismatic smirk. Meticulously groomed Van Dyke facial hair. Long, thin black dreadlocks flowing dynamically. Slender-fit build, relaxed and rhythmic posture."
 
@@ -105,108 +55,31 @@ matches:
 
   - trigger: ":dimmu"
     replace: "A colossal 7'8 muscular goliath with blue-grey skin. Bald, square impassive face, solid white pupil-less eyes. Glowing luminescent cyan magical runes on chest and arms. Wearing a thick brown leather harness that is held in the front by a thick ring, heavy bracers, and a wide belt with an ornate buckle."
-
-  - trigger: ":kae-tavern"
-    replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid with a red ribbon. Amber-gold eyes, knowing smirk. Tavern attire: cream linen chemise with billowing sleeves, mid-bust brown leather corset, white apron, charcoal leather trousers, and thigh-high red boots with gold embroidery."
-
-  - trigger: ":kae-combat"
-    replace: "Kae, a slender yet buxom woman with an hourglass fit and platinum-blonde Aerith-style braid. Amber-gold eyes. Combat gear: flowing crimson cape with gold dragon brooch, fitted leather trousers, bronze scale hip armor (faulds), and thigh-high red boots. Wielding a short sword made of translucent glowing blue crystal."
-
-### ANGLES DE CAMÉRA & CADRAGE
   
-  # --- Cadrage (Framing) ---
-  - trigger: ":cam-ecu"
-    replace: "Camera Shot: Extreme Close-Up (ECU) shot, focusing intensely on a single small detail, highly detailed and intimate."
+  ###  EXPRESSIONS 
+  - trigger: ":happy"
+    replace: "[Expression reference: Happy] Wide warm smile, eyes bright and joyful."
 
-  - trigger: ":cam-cu"
-    replace: "Camera Shot: Close-Up (CU) shot, framing the character's face from the shoulders up, strongly highlighting facial expressions and raw emotion."
+  - trigger: ":neutral"
+    replace: "[Expression reference: Neutral] Calm and unreadable intensity, relaxed facial muscles."
 
-  - trigger: ":cam-mcu"
-    replace: "Camera Shot: Medium Close-Up (MCU) shot, framed from the chest up, perfect for dialogue and subtle upper-body language."
+  - trigger: "angry"
+    replace: "[Expression reference: Angry] Furrowed brows, sharp glaring amber eyes, tight lips."
 
-  - trigger: ":cam-ms"
-    replace: "Camera Shot: Medium Shot (MS), framed from the waist up, showing the character's body language and interaction with the immediate environment."
+  - trigger: ":smirk"
+    replace: "[Expression reference: Smirking] Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
 
-  - trigger: ":cam-cowboy"
-    replace: "Camera Shot: Cowboy Shot / American Shot, framed from the mid-thigh up, perfect for showing holstered weapons, utility belts, or a dynamic action stance."
+  - trigger: ":defiant"
+    replace: "[Expression reference: Defiant] Chin slightly raised, determined and stubborn glare, tight jaw."
 
-  - trigger: ":cam-full"
-    replace: "Camera Shot: Full-Body Shot, capturing the entire character from head to toe, showing their complete outfit and their scale within the environment."
+  - trigger: ":sad"
+    replace: "[Expression reference: Sad] Downturned eyes, slight vulnerable frown, soft sorrowful gaze."
 
-  - trigger: ":cam-wide"
-    replace: "Camera Shot: Establishing Wide Shot / Extreme Long Shot (ELS), capturing the vast setting and emphasizing the epic scale of the environment."
+  - trigger: ":blush"
+    replace: "[Expression reference: Blushing] Noticeable rosy red cheeks, flustered but gentle shy smile."
 
-  - trigger: ":cam-two"
-    replace: "Camera Shot: Two-Shot framing, showing two characters side-by-side or interacting within the same frame."
+  - trigger: ":closed"
+    replace: "[Expression reference: Serene] Both eyes gently closed, peaceful and calm face."
 
-  # --- Angles (Angles) ---
-  - trigger: ":ang-eye"
-    replace: "Camera Angle: Eye-Level camera angle, a neutral, natural, and highly relatable perspective."
-
-  - trigger: ":ang-low"
-    replace: "Camera Angle: Low-Angle shot, looking up at the character from below to make them appear powerful, heroic, imposing, and dominant."
-
-  - trigger: ":ang-high"
-    replace: "Camera Angle: High-Angle shot, looking down on the character from above, making them appear vulnerable, isolated, or overwhelmed."
-
-  - trigger: ":ang-bird"
-    replace: "Camera Angle: Bird's Eye View / Top-Down shot, looking directly overhead, establishing the spatial layout or conveying a frantic, chaotic mood."
-
-  - trigger: ":ang-worm"
-    replace: "Camera Angle: Worm's Eye View, an extreme ground-level shot looking straight up, creating a highly dramatic, intense, and towering perspective."
-
-  - trigger: ":ang-dutch"
-    replace: "Camera Angle: Dutch Angle / Dutch Tilt, a slanted and diagonal camera angle creating a sense of psychological tension, disorientation, or cinematic chaos."
-
-  # --- Techniques Spécialisées & BD ---
-  - trigger: ":fx-pov"
-    replace: "Composition: Point of View (POV) shot, showing the scene directly through the character's own eyes."
-
-  - trigger: ":fx-ots"
-    replace: "Composition: Over-the-Shoulder (OTS) shot, positioned behind one character looking past their shoulder to focus on the subject they are speaking to."
-
-  - trigger: ":fx-foreshortening"
-    replace: "Composition: Extreme foreshortening perspective, dynamic comic book action style, exaggerating the size of limbs or weapons extending directly toward the camera."
-
-  - trigger: ":fx-fisheye"
-    replace: "Lens Effect: Fisheye lens, heavily distorted and curved perspective, creating an intense, claustrophobic, or highly dynamic action feel."
-
-  - trigger: ":fx-macro"
-    replace: "Lens Effect: Macro photography shot, extremely close-up focusing on microscopic textures and depth of field."
-
-  - trigger: ":fx-iso"
-    replace: "Composition: Isometric angle / Orthographic projection, tabletop RPG style, an elevated 3D diagonal perspective showing the environment and characters with clear depth."
-
-  - trigger: ":fx-glamour"
-    replace: "Composition: Glamour Portrait style, a close, artistic, and stylized shot specifically designed to highlight the character’s aesthetic beauty and intense presence."
-
-
-  ### NOTES DE SESSION D&D
-  - trigger: ":fichesession"
-    replace: |
-      ---
-      category: Session
-      tags: [Dragon-Heist, Waterdeep]
-      session_date: {{sessiondate}}
-      status: Terminé
-      dg-publish: true
-      ---
-      # 📜 Session [NUMÉRO] : [TITRE ÉPIQUE]
-      > [!abstract] **Résumé rapide**
-      > [Résumé rigoureux de 2-3 phrases de l'intrigue principale.]
-      ---
-      ## 📖 Détails des événements
-      ### 📍 [[NOM DU LIEU 1]]
-      * **Action :** [Détails]
-      ---
-      ## 🎲 Challenges
-      | Personnage | Compétence | DC | Résultat |
-      | :--- | :--- | :--- | :--- |
-      | **[[Nom]]** | [Skill] | [DC] | [Score] |
-      ---
-      **🎯 Prochaine étape :** [Cliffhanger].
-    vars:
-      - name: sessiondate
-        type: date
-        params:
-          format: "%Y-%m-%d"
+  - trigger: ":wink"
+    replace: "[Expression reference: Winking] Playful wink, one eye closed, cheeky and charming smile."
