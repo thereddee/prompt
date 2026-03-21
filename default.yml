@@ -25,7 +25,7 @@ matches:
     replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
   - trigger: ":marvel"
-    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. No Text and no SFX"
+    replace: "Action happen on a gotic medieval factory rooftop.Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. No Text and no SFX"
 
   ### --- Iron Lotus ---
   - trigger: ":goral"
