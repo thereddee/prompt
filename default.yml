@@ -37,8 +37,12 @@ matches:
     image: "assets/Kae-Full.png"
 
   - trigger: ":krix"
-    replace: "[Use ks.b.jpg for hood reference] A small, blue-skinned goblin wearing a leather aviator cap with goggles. (reference: Krix-Full.png )"
+    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles. (reference: Krix-Full.png )"
     image: "assets/Krix-Full.png"
+
+  - trigger: ":sword"
+    replace: "A unique short sword forged from glowing, translucent blue crystal and radiating magical energy. (reference: sword.png )"
+    image: "assets/sword.png"
 
   ### --- Dragonheist ---
   - trigger: ":doggus"
