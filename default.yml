@@ -25,7 +25,7 @@ matches:
     replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
   - trigger: ":marvel"
-    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation."
+    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. No Text and no SFX"
 
   ### --- Iron Lotus ---
   - trigger: ":goral"
@@ -33,7 +33,7 @@ matches:
     image: "assets/Krix-Full.png"
 
   - trigger: ":kae"
-    replace: "a beautiful 18 year old asian platinum-silver haired woman in a thick crimson cloak and dark leather adventure gear  (reference: Kae-Full.png) "
+    replace: "a beautiful 18 year old asian platinum-silver haired woman in a thick crimson cloak and dark leather adventure gear and crystal arms up to her shoulder.  (reference: Kae-Full.png) "
     image: "assets/Kae-Full.png"
 
   - trigger: ":krix"
