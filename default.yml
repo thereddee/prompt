@@ -56,6 +56,11 @@ matches:
     replace: " Early 30s male with short messy dark hair and a neutral expression, featuring glowing cyan magitek veins running up his neck and a temple scar. His intense gaze and sharp jawline give him a high-stakes professional aura, blending rugged experience with arcane technology.Elite medieval suit consisting of dark studded leather over fine chainmail, paired with polished silver greaves and glowing magitek-infused bracers. A heavy charcoal travel cloak is fastened by silver brooches, creating a silhouette that is both functional and prestigious. ( reference: vanne.png )"
     image: "assets/vanne.png"
 
+
+  - trigger: ":vespera"
+    replace: "blue-grey skinned drow with long dark hair, dressed in dark plated armor and a flowing cape, sometimes depicted with yellow aviator glasses. (reference: vespera.png )""
+    image: "assets/vespera.png"
+
 Vane
   ### --- Dragonheist ---
   - trigger: ":doggus"
