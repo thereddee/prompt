@@ -10,30 +10,29 @@ matches:
     replace: "Artstyle: Clean cel-shaded anime style, flat colors, bold outlines, simple shading, limited color palette, style of Vox Machina, style of Avatar The Last Airbender."
 
   # --- Iron Lotus : Personnages ---
-  - trigger: ":goral"
-    replace: "A muscular orc character with glowing purple eyes intricate, 250cm tall (reference: gface.jpg gbody.png)"
+- trigger: ":goral"
+    replace: "A massive, hulking orc character, 250cm tall, towering over others with a head twice the size of a human's; glowing purple eyes (reference: gface.jpg gbody.png)"
 
   - trigger: ":kae" 
-    replace: "a beautiful 18 year old asian platinum-silver haired woman, 165cm tall (reference: kbody.png kface.png)"
+    replace: "a beautiful 18 year old asian platinum-silver haired woman, 165cm tall, slender and athletic build (reference: kbody.png kface.png)"
 
   - trigger: ":magitek" 
-    replace: "Magiteck guard, 245cm tall (reference: mbody.png)"
+    replace: "Magiteck guard, 245cm tall, a colossal heavy-plated frame that dominates the height of the frame (reference: mbody.png)"
 
   - trigger: ":krix"
-    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles, 100cm tall (reference: kxbody.jpeg kxface.jpeg)"
+    replace: "A blue-skinned goblin, 100cm tall; he reaches waist-high compared to an adult human, wearing a leather aviator cap with goggles (reference: kxbody.jpeg kxface.jpeg)"
 
   - trigger: ":orlando"
-    replace: "An adult male halfling (4 feet tall) with human-like proportions and a wiry build, featuring sharp, cold facial features and slicked-back polar white hair with shaved sides. He wears minimalist black leather stealth armor with a single diagonal chest strap and utility pouches. (reference: orlando.png)"
+    replace: "An adult male halfling, 120cm tall (4 feet); he reaches the mid-chest of an average human, with human-like proportions, wiry build, sharp cold facial features, and slicked-back polar white hair (reference: orlando.png)"
 
   - trigger: ":jaro"
-    replace: "male tech-scavenger in his late 40s. He has unkempt, long dark hair tied in a messy half-ponytail, greying at the temples, and a scruffy short beard. He wears a stained linen shirt under a heavy, worn-out patchwork leather duster coat. Round brass welding goggles rest on his forehead. (reference: jaro.png)"
+    replace: "male tech-scavenger in his late 40s, average human height and weary posture; unkempt long dark hair, messy half-ponytail, greying at temples, scruffy short beard (reference: jaro.png)"
 
   - trigger: ":vanne"
-    replace: "Early 30s male with short messy dark hair, glowing cyan magitek veins on his neck and a temple scar. Elite medieval suit consisting of dark studded leather over fine chainmail with a heavy charcoal travel cloak. (reference: vanne.png)"
+    replace: "Elite male warrior in his early 30s, tall and broad-shouldered (185cm), with short messy dark hair and glowing cyan magitek veins on his neck (reference: vanne.png)"
 
   - trigger: ":vespera"
-    replace: "blue-grey skinned drow with long dark hair, dressed in dark plated armor and a flowing cape, sometimes depicted with yellow aviator glasses. (reference: vespera.png)"
-
+    replace: "tall and elegant blue-grey skinned drow woman with a lithe silhouette, long dark hair, dark plated armor and a flowing cape (reference: vespera.png)"
   # --- Lieux et Objets ---
   - trigger: ":factory"
     replace: "factory (reference: factory.png)"
