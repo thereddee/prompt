@@ -11,13 +11,16 @@ matches:
 
   # --- Iron Lotus : Personnages ---
   - trigger: ":goral"
-    replace: "A muscular orc character with glowing purple eyes intricate (reference: gface.jpg gbody.png)"
+    replace: "A muscular orc character with glowing purple eyes intricate, 250cm tall (reference: gface.jpg gbody.png)"
 
   - trigger: ":kae" 
-    replace: "a beautiful 18 year old asian platinum-silver haired woman (reference: kbody.png kface.png)"
+    replace: "a beautiful 18 year old asian platinum-silver haired woman, 165cm tall (reference: kbody.png kface.png)"
+
+  - trigger: ":magitek" 
+    replace: "Magiteck guard, 245cm tall (reference: mbody.png)"
 
   - trigger: ":krix"
-    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles (reference: kxbody.jpeg kxface.jpeg)"
+    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles, 100cm tall (reference: kxbody.jpeg kxface.jpeg)"
 
   - trigger: ":orlando"
     replace: "An adult male halfling (4 feet tall) with human-like proportions and a wiry build, featuring sharp, cold facial features and slicked-back polar white hair with shaved sides. He wears minimalist black leather stealth armor with a single diagonal chest strap and utility pouches. (reference: orlando.png)"
