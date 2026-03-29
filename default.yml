@@ -4,104 +4,54 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
 
 matches:
-  ### SYSTÈME & UTILS
-  - trigger: ":espanso"
-    replace: "Hi there!"
+  # --- Simple text replacement ---
+  # - trigger: ":espanso"
+  #   replace: "Hi there!"
 
-  - trigger: ":txt"
-    replace: "REPLY TO ME IN TEXT, DO NOT GENERATE AN IMAGE"
+  # - trigger: ":txt"
+  #   replace: "REPLY TO ME IN TEXT, DO NOT GENERATE AN IMAGE"
 
-  - trigger: ":date"
-    replace: "{{mydate}}"
-    vars:
-      - name: mydate
-        type: date
-        params:
-          format: "%m/%d/%Y"
+  # # --- Dates & Shell ---
+  # - trigger: ":date"
+  #   replace: "{{mydate}}"
+  #   vars:
+  #     - name: mydate
+  #       type: date
+  #       params:
+  #         format: "%m/%d/%Y"
 
-  ### STYLES DE GÉNÉRATION
+  # - trigger: ":shell"
+  #   replace: "{{output}}"
+  #   vars:
+  #     - name: output
+  #       type: shell
+  #       params:
+  #         cmd: "echo 'Hello from your shell'"
+
 
   - trigger: ":rpgcomic"
-    replace: "High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
+    replace: "Artstyle: High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
   - trigger: ":marvel"
-    replace: "Artstyle: Modern American comic book illustration. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. No Text and no SFX"
-
-  ### --- Iron Lotus ---
+    replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
+  - trigger: ":vox"
+    replace: "Artstyle: The artistic style features clean, Cellshaded, cel-shaded anime style, flat colors, bold outlines, simple shading, limited color palette, style of Vox Machina, style of Avatar The Last Airbender."
+ 
+  # --- Iron Lotus ---
   - trigger: ":goral"
-    replace: "A muscular orc character with glowing purple eyes and intricate, glowing magenta-purple energy veins covering his grey-green skin, as seen in the reference image. (reference: Goral-Full.png)"
-    image: "assets/Krix-Full.png"
-
-  - trigger: ":kae"
-    replace: "a beautiful 18 year old asian platinum-silver haired woman in a thick crimson cloak and dark leather adventure gear and crystal arms up to her shoulder.  (reference: Kae-Full.png) "
-    image: "assets/Kae-Full.png"
-
+    replace: "A muscular orc character with glowing purple eyes intricate ( reference gface.jpg gbody.png ) "
+  - trigger: ":kae" 
+    replace: "a beautiful 18 year old asian platinum-silver haired woman  ( reference: kbody.png kface.png ) "
   - trigger: ":krix"
-    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles. (reference: Krix-Full.png )"
-    image: "assets/Krix-Full.png"
+    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles. ( reference: kxbody.jpeg kxface.jpeg ) "
+  - trigger: ":factory"
+    replace: "factory ( reference: factory.png) "
+  - trigger: ":vault"
+    replace: "vault ( reference: vault.png ) "
+  - trigger: ":office"
+    replace: "office  ( reference: office.png )  "
+  - trigger: ":axe"
+    replace: "office  ( reference: office.png )  "
+  - trigger: ":hammer"
+    replace: "office  ( reference: office.png )  " 
 
-  - trigger: ":sword"
-    replace: "A unique short sword forged from glowing, translucent blue crystal and radiating magical energy. (reference: sword.png )"
-    image: "assets/sword.png"
-
-  - trigger: ":orlando"
-    replace: "An adult male halfling (4feet 6inch tall) with human-like proportions and a wiry build, featuring sharp, cold facial features and slicked-back polar white hair with shaved sides. He wears minimalist black leather stealth armor with a single diagonal chest strap and utility pouches, rendered in a clean.  (reference: orlando.png )"
-    image: "assets/orlando.png"
-
-  - trigger: ":jaro"
-    replace: "male tech-scavenger in his late 40s. He has unkempt, long dark hair tied in a messy half-ponytail, greying at the temples, and a scruffy short beard. He wears a stained linen shirt under a heavy, worn-out patchwork leather duster coat, with diagonal belts and thick gloves. Round brass welding goggles rest on his forehead. He has sharp, tired features and half-lidded eyes giving an air of someone who is completely done with the world. (reference: jaro.png )"
-    image: "assets/jaro.png"
-
-  - trigger: ":vanne"
-    replace: " Early 30s male with short messy dark hair and a neutral expression, featuring glowing cyan magitek veins running up his neck and a temple scar. His intense gaze and sharp jawline give him a high-stakes professional aura, blending rugged experience with arcane technology.Elite medieval suit consisting of dark studded leather over fine chainmail, paired with polished silver greaves and glowing magitek-infused bracers. A heavy charcoal travel cloak is fastened by silver brooches, creating a silhouette that is both functional and prestigious. ( reference: vanne.png )"
-    image: "assets/vanne.png"
-
-
-  - trigger: ":vespera"
-    replace: "blue-grey skinned drow with long dark hair, dressed in dark plated armor and a flowing cape, sometimes depicted with yellow aviator glasses. (reference: vespera.png )""
-    image: "assets/vespera.png"
-
-Vane
-  ### --- Dragonheist ---
-  - trigger: ":doggus"
-    replace: "A very tall, lanky yet toned man with deep ebony skin. Narrow facial structure, high cheekbones, sharp jawline. Half-lidded eyes with a serene, confident gaze and a charismatic smirk. Meticulously groomed Van Dyke facial hair. Long, thin black dreadlocks flowing dynamically. Slender-fit build, relaxed and rhythmic posture."
-
-  - trigger: ":danne"
-    replace: "A mature human warrior in late 50s, 6'7 tall, broad-shouldered with a commanding presence. Shoulder-length brown hair, short grizzled beard. Wearing dark brown studded leather brigandine armor and a tattered crimson travel cloak fastened by a circular gold brooch."
-
-  - trigger: ":orlando"
-    replace: "A small-statured 4ft halfling with a compact, wiry build. Sharp, refined features with intense focus and professional coldness. Polar white/silvery hair, short sides, slicked back top. Wearing cinched black stealth leather armor, reinforced doublet with diagonal straps, utility pouches, silent travel boots."
-
-  - trigger: ":dio"
-    replace: "A 3'4 halfling with a robust build and theatrical rockstar presence. Thick, dark brown curly hair mane. Small pointed beard, expressive and intense features. Wearing a long rich brown leather duster coat, billowing white linen shirt, and sturdy dark leather boots."
-
-  - trigger: ":dimmu"
-    replace: "A colossal 7'8 muscular goliath with blue-grey skin. Bald, square impassive face, solid white pupil-less eyes. Glowing luminescent cyan magical runes on chest and arms. Wearing a thick brown leather harness that is held in the front by a thick ring, heavy bracers, and a wide belt with an ornate buckle."
-  
-  ###  EXPRESSIONS 
-  - trigger: ":happy"
-    replace: "[Expression reference: Happy] Wide warm smile, eyes bright and joyful."
-
-  - trigger: ":neutral"
-    replace: "[Expression reference: Neutral] Calm and unreadable intensity, relaxed facial muscles."
-
-  - trigger: "angry"
-    replace: "[Expression reference: Angry] Furrowed brows, sharp glaring amber eyes, tight lips."
-
-  - trigger: ":smirk"
-    replace: "[Expression reference: Smirking] Signature knowing smirk, one corner of her mouth raised playfully, confident gaze."
-
-  - trigger: ":defiant"
-    replace: "[Expression reference: Defiant] Chin slightly raised, determined and stubborn glare, tight jaw."
-
-  - trigger: ":sad"
-    replace: "[Expression reference: Sad] Downturned eyes, slight vulnerable frown, soft sorrowful gaze."
-
-  - trigger: ":blush"
-    replace: "[Expression reference: Blushing] Noticeable rosy red cheeks, flustered but gentle shy smile."
-
-  - trigger: ":closed"
-    replace: "[Expression reference: Serene] Both eyes gently closed, peaceful and calm face."
-
-  - trigger: ":wink"
-    replace: "[Expression reference: Winking] Playful wink, one eye closed, cheeky and charming smile."
