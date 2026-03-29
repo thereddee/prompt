@@ -1,57 +1,48 @@
-# espanso match file
-# For a complete introduction, visit the official docs at: https://espanso.org/docs/
-
-# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
-
 matches:
-  # --- Simple text replacement ---
-  # - trigger: ":espanso"
-  #   replace: "Hi there!"
-
-  # - trigger: ":txt"
-  #   replace: "REPLY TO ME IN TEXT, DO NOT GENERATE AN IMAGE"
-
-  # # --- Dates & Shell ---
-  # - trigger: ":date"
-  #   replace: "{{mydate}}"
-  #   vars:
-  #     - name: mydate
-  #       type: date
-  #       params:
-  #         format: "%m/%d/%Y"
-
-  # - trigger: ":shell"
-  #   replace: "{{output}}"
-  #   vars:
-  #     - name: output
-  #       type: shell
-  #       params:
-  #         cmd: "echo 'Hello from your shell'"
-
-
+  # --- Styles Artistiques ---
   - trigger: ":rpgcomic"
     replace: "Artstyle: High-fantasy digital illustration in a modern watercolor and ink aesthetic. The scene features clean, thin ink outlines combined with soft, textured digital watercolor washes. Character proportions follow a modern anime/manga influence."
 
   - trigger: ":marvel"
     replace: "Artstyle: Modern American comic book illustration, Marvel comics aesthetic. Clean and crisp black ink outlines, no cross-hatching. Smooth digital coloring with soft gradients and high color saturation. Dramatic studio lighting, isolated on a solid neutral white background."
-  - trigger: ":vox"
-    replace: "Artstyle: The artistic style features clean, Cellshaded, cel-shaded anime style, flat colors, bold outlines, simple shading, limited color palette, style of Vox Machina, style of Avatar The Last Airbender."
- 
-  # --- Iron Lotus ---
-  - trigger: ":goral"
-    replace: "A muscular orc character with glowing purple eyes intricate ( reference gface.jpg gbody.png ) "
-  - trigger: ":kae" 
-    replace: "a beautiful 18 year old asian platinum-silver haired woman  ( reference: kbody.png kface.png ) "
-  - trigger: ":krix"
-    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles. ( reference: kxbody.jpeg kxface.jpeg ) "
-  - trigger: ":factory"
-    replace: "factory ( reference: factory.png) "
-  - trigger: ":vault"
-    replace: "vault ( reference: vault.png ) "
-  - trigger: ":office"
-    replace: "office  ( reference: office.png )  "
-  - trigger: ":axe"
-    replace: "office  ( reference: office.png )  "
-  - trigger: ":hammer"
-    replace: "office  ( reference: office.png )  " 
 
+  - trigger: ":vox"
+    replace: "Artstyle: Clean cel-shaded anime style, flat colors, bold outlines, simple shading, limited color palette, style of Vox Machina, style of Avatar The Last Airbender."
+
+  # --- Iron Lotus : Personnages ---
+  - trigger: ":goral"
+    replace: "A muscular orc character with glowing purple eyes intricate (reference: gface.jpg gbody.png)"
+
+  - trigger: ":kae" 
+    replace: "a beautiful 18 year old asian platinum-silver haired woman (reference: kbody.png kface.png)"
+
+  - trigger: ":krix"
+    replace: "A small, blue-skinned goblin wearing a leather aviator cap with goggles (reference: kxbody.jpeg kxface.jpeg)"
+
+  - trigger: ":orlando"
+    replace: "An adult male halfling (4 feet tall) with human-like proportions and a wiry build, featuring sharp, cold facial features and slicked-back polar white hair with shaved sides. He wears minimalist black leather stealth armor with a single diagonal chest strap and utility pouches. (reference: orlando.png)"
+
+  - trigger: ":jaro"
+    replace: "male tech-scavenger in his late 40s. He has unkempt, long dark hair tied in a messy half-ponytail, greying at the temples, and a scruffy short beard. He wears a stained linen shirt under a heavy, worn-out patchwork leather duster coat. Round brass welding goggles rest on his forehead. (reference: jaro.png)"
+
+  - trigger: ":vanne"
+    replace: "Early 30s male with short messy dark hair, glowing cyan magitek veins on his neck and a temple scar. Elite medieval suit consisting of dark studded leather over fine chainmail with a heavy charcoal travel cloak. (reference: vanne.png)"
+
+  - trigger: ":vespera"
+    replace: "blue-grey skinned drow with long dark hair, dressed in dark plated armor and a flowing cape, sometimes depicted with yellow aviator glasses. (reference: vespera.png)"
+
+  # --- Lieux et Objets ---
+  - trigger: ":factory"
+    replace: "factory (reference: factory.png)"
+
+  - trigger: ":vault"
+    replace: "vault (reference: vault.png)"
+
+  - trigger: ":office"
+    replace: "office (reference: office.png)"
+
+  - trigger: ":axe"
+    replace: "battle axe (reference: axe.png)"
+
+  - trigger: ":hammer"
+    replace: "war hammer (reference: hammer.png)"
